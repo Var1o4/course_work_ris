@@ -35,6 +35,18 @@ public class User implements UserDetails, Serializable {
     @Column(name = "password", length = 1000)
     private String password;
 
+    @Column(name = "address")
+    private String address;
+    @Column(name = "passportNumber")
+    private String passportNumber;
+
+    @Column(length = 1000000)
+    private byte[] personalPhoto;
+    @Column(length = 1000000)
+    private byte[] passportPhoto;
+
+    private boolean verificationSubmitted = false;
+    private boolean verified = false;
 
     @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
     @CollectionTable(name="user_role",

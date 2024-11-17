@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
 @Configuration
@@ -22,11 +23,14 @@ public class SecurityConfig {
     private final CustomerUserDetailService userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private VerificationCheckFilter verificationCheckFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests((requests) -> requests
-                .requestMatchers("/registration", "/login", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/registration", "/login", "/css/**", "/js/**", "/admin/**").permitAll()
                 .requestMatchers("/services/**").hasAnyAuthority("ROLE_URFACE", "ROLE_ADMIN")
                 .anyRequest().authenticated()
             )
@@ -37,7 +41,8 @@ public class SecurityConfig {
             )
             .logout((logout) -> logout
                 .logoutSuccessUrl("/login")
-                .permitAll());
+                .permitAll())
+            .addFilterAfter(verificationCheckFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
