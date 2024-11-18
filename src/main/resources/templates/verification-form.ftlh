@@ -63,6 +63,25 @@
                 <input type="file" name="passportPhoto" accept="image/*" required>
             </div>
             
+            <div class="form-group">
+                <label class="form-label">Тип пользователя</label>
+                <select name="userType" class="form-control" required>
+                    <option value="ROLE_USER">Физическое лицо</option>
+                    <option value="ROLE_URFACE">Юридическое лицо</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Срок договора (лет)</label>
+                <select name="contractDuration" class="form-control" required>
+                    <option value="1">1 год</option>
+                    <option value="2">2 года</option>
+                    <option value="3">3 года</option>
+                    <option value="4">4 года</option>
+                    <option value="5">5 лет</option>
+                </select>
+            </div>
+            
             <button type="submit" class="btn btn-primary">Отправить на проверку</button>
         </form>
     </div>

@@ -1,5 +1,6 @@
 package com.example.course_like_erip.services;
 
+import com.example.course_like_erip.models.Invoice;
 import com.example.course_like_erip.models.Payment;
 import com.example.course_like_erip.models.User;
 import com.example.course_like_erip.repositories.PaymentRepository;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,8 @@ import java.util.List;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final InvoiceService invoiceService;
+    private final OperationService operationService;
 
     public List<Payment> getRootPaymentGroups() {
         return paymentRepository.findByParentPaymentIsNull();
@@ -114,19 +118,20 @@ public class PaymentService {
     }
 
     @Transactional
-    public void processPayment(Long paymentId, Double amount, Principal principal) {
+    public void processPayment(Long paymentId, Long invoiceId, BigDecimal amount) {
         Payment payment = getPaymentById(paymentId);
-        User user = getUserByPrincipal(principal);
-
-        if (payment.isFixedPrice() && !payment.getAmount().equals(amount)) {
-            throw new RuntimeException("Сумма платежа должна соответствовать фиксированной цене");
+        Invoice sourceInvoice = invoiceService.getInvoiceById(invoiceId);
+        
+        // Проверяем валидность платежа
+        validatePayment(payment);
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            log.error("Payment amount must be positive");
+            throw new RuntimeException("Сумма платежа должна быть положительной");
         }
-
-        if (!payment.isFixedPrice() && (amount == null || amount <= 0)) {
-            throw new RuntimeException("Необходимо указать корректную сумму платежа");
-        }
-
-        // Здесь можно добавить логику обработки платежа
+        
+        // Обрабатываем операции
+        operationService.processPayment(payment, sourceInvoice, amount);
+        // Обновляем статус платежа
         payment.setStatus("PAID");
         paymentRepository.save(payment);
     }

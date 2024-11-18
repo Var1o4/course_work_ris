@@ -123,4 +123,6 @@ public class User implements UserDetails, Serializable {
                 .anyMatch(role -> role.name().equals(roleName));
     }
 
+
+
 }

@@ -1,11 +1,15 @@
 package com.example.course_like_erip.services;
 
+import com.example.course_like_erip.models.Enum.ContractStatus;
 import com.example.course_like_erip.models.Enum.Role;
+import com.example.course_like_erip.models.Contract;
 import com.example.course_like_erip.models.User;
+import com.example.course_like_erip.repositories.ContractRepository;
 import com.example.course_like_erip.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +29,7 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
     private final RestTemplateBuilder restTemplateBuilder;
+    private final ContractRepository contractRepository;
 
 
     public User getUserByPrincipal(Principal principal) {
@@ -54,7 +60,7 @@ public class UserService {
       userRepository.save(user);
       return true;
   }
-  
+
 //    public List<News> getNews(Long id){
 //        News news = new News();
 //        if(newsRepository.findByUser_Id(id)!=null){
@@ -147,18 +153,42 @@ public class UserService {
 
 
 
-     public void submitVerification(Principal principal, String address, 
-            String passportNumber, MultipartFile personalPhoto, 
-            MultipartFile passportPhoto) throws IOException {
-            
-        User user = getUserByPrincipal(principal);
-        user.setAddress(address);
-        user.setPassportNumber(passportNumber);
-        user.setPersonalPhoto(personalPhoto.getBytes());
-        user.setPassportPhoto(passportPhoto.getBytes());
-        user.setVerificationSubmitted(true);
-        userRepository.save(user);
+   public void submitVerification(Principal principal, String address, 
+        String passportNumber, MultipartFile personalPhoto, 
+        MultipartFile passportPhoto, String userType, int contractDuration) throws IOException {
+    
+    User user = getUserByPrincipal(principal);
+    user.setAddress(address);
+    user.setPassportNumber(passportNumber);
+    user.setPersonalPhoto(personalPhoto.getBytes());
+    user.setPassportPhoto(passportPhoto.getBytes());
+    user.setVerificationSubmitted(true);
+    
+    // Добавляем выбранную роль
+    if (userType.equals("ROLE_URFACE")) {
+        user.getRoles().add(Role.ROLE_URFACE);
+    } else {
+        user.getRoles().add(Role.ROLE_USER);
     }
+    
+    userRepository.save(user);
+    
+    // Создаем договор
+    Contract contract = new Contract();
+    contract.setUser(user);
+    contract.setContractNumber(generateContractNumber());
+    contract.setStartDate(LocalDate.now());
+    contract.setEndDate(LocalDate.now().plusYears(contractDuration));
+    contract.setStatus(ContractStatus.ACTIVE);
+    
+    
+    contractRepository.save(contract);
+}
+
+private String generateContractNumber() {
+    return "C-" + LocalDate.now().getYear() + "-" + 
+           String.format("%04d", new Random().nextInt(10000));
+}
     
     public void processVerification(Long userId, boolean approved) {
         User user = userRepository.findById(userId)

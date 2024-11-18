@@ -104,17 +104,18 @@ public class UserController {
     }
     
     @PostMapping("/verify")
-    public String submitVerification(
-            @RequestParam("address") String address,
-            @RequestParam("passportNumber") String passportNumber,
-            @RequestParam("personalPhoto") MultipartFile personalPhoto,
-            @RequestParam("passportPhoto") MultipartFile passportPhoto,
-            Principal principal) throws IOException {
-            
-        userService.submitVerification(principal, address, passportNumber, 
-                                     personalPhoto, passportPhoto);
-        return "redirect:/verification-pending";
-    }
+public String submitVerification(@RequestParam String address,
+        @RequestParam String passportNumber,
+        @RequestParam MultipartFile personalPhoto,
+        @RequestParam MultipartFile passportPhoto,
+        @RequestParam String userType,
+        @RequestParam int contractDuration,
+        Principal principal) throws IOException {
+    
+    userService.submitVerification(principal, address, passportNumber,
+            personalPhoto, passportPhoto, userType, contractDuration);
+    return "redirect:/verification-pending";
+}
     
     @GetMapping("/admin/verifications")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

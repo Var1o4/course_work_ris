@@ -26,7 +26,7 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/payments/my">Мои платежи</a>
                         </li>
-                        <#if user?? && user.isAdmin()>
+                        <#if user?? && user.hasRole('ROLE_ADMIN')>
                             <li class="nav-item">
                                 <a class="nav-link" href="/payments/all">Все платежи</a>
                             </li>

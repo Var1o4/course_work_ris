@@ -148,7 +148,7 @@
 
             <div class="info-row">
                 <span class="info-label">Тип цены:</span>
-                <span class="info-value">${payment.fixedPrice?string('Фиксированная', 'Переменная')}</span>
+                <span class="info-value">${payment.fixedPrice?string('Фиксированная', 'Переменна��')}</span>
             </div>
 
             <div class="info-row">
@@ -161,17 +161,10 @@
             <div class="action-buttons">
                 <#if user??>
                     <#if !payment.group && (user.hasRole('ROLE_ADMIN') || user.hasRole('ROLE_USER'))>
-                        <form action="/payments/${payment.id}/pay" method="POST" style="display: inline;">
-                            <input type="hidden" name="_csrf" value="${_csrf.token}">
-                            <#if !payment.fixedPrice>
-                                <input type="number" name="amount" placeholder="Сумма" required step="0.01" 
-                                       style="width: 100px; margin-right: 10px; padding: 5px;">
-                            </#if>
-                            <button type="submit" class="btn btn-pay">
-                                <i class="fas fa-credit-card"></i>
-                                Оплатить
-                            </button>
-                        </form>
+                        <a href="/payments/${payment.id}/pay" class="btn btn-pay">
+                            <i class="fas fa-credit-card"></i>
+                            Оплатить
+                        </a>
                     </#if>
                 </#if>
                 

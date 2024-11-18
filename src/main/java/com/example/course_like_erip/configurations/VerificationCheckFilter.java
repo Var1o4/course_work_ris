@@ -32,16 +32,24 @@ public class VerificationCheckFilter extends OncePerRequestFilter {
         
         if (auth != null && auth.isAuthenticated() 
                 && !(auth instanceof AnonymousAuthenticationToken)) {
-            User user = userService.getUserByPrincipal(auth);
-            
-            if (user.getEmail().equals("1111@mail.com") || 
-                user.getRoles().contains(Role.ROLE_ADMIN)) {
+            try {
+                User user = userService.getUserByPrincipal(auth);
+                
+                if (user != null) {
+                    if (user.getEmail().equals("1111@mail.com") || 
+                        user.getRoles().contains(Role.ROLE_ADMIN)) {
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+                    
+                    if (!user.isVerified() && !isAllowedPath(path)) {
+                        response.sendRedirect("/verify");
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // Логируем ошибку и пропускаем запрос дальше
                 filterChain.doFilter(request, response);
-                return;
-            }
-            
-            if (!user.isVerified() && !isAllowedPath(path)) {
-                response.sendRedirect("/verify");
                 return;
             }
         }
@@ -51,6 +59,7 @@ public class VerificationCheckFilter extends OncePerRequestFilter {
     
     private boolean isAllowedPath(String path) {
         return path.equals("/") || path.startsWith("/verify") 
-               || path.startsWith("/static") || path.equals("/logout");
+               || path.startsWith("/static") || path.equals("/logout")
+               || path.equals("/login") || path.equals("/registration");
     }
 }

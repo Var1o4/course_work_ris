@@ -1,7 +1,11 @@
 package com.example.course_like_erip.controllers;
 
+import com.example.course_like_erip.dto.PaymentProcessDTO;
+import com.example.course_like_erip.models.Invoice;
 import com.example.course_like_erip.models.Payment;
 import com.example.course_like_erip.models.User;
+import com.example.course_like_erip.models.Enum.InvoiceStatus;
+import com.example.course_like_erip.services.InvoiceService;
 import com.example.course_like_erip.services.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -9,15 +13,20 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 import java.util.List;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/payments")
 @RequiredArgsConstructor
 public class PaymentController {
     private final PaymentService paymentService;
+    private final InvoiceService invoiceService;
 
     @GetMapping("/groups")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
@@ -116,10 +125,59 @@ public class PaymentController {
         return "payments/payment-view";
     }
 
-    @PostMapping("/{id}/pay")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public String makePayment(@PathVariable Long id, @RequestParam(required = false) Double amount, Principal principal) {
-        paymentService.processPayment(id, amount, principal);
-        return "redirect:/payments/my";
+    @GetMapping("/{id}/pay")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public String showPaymentForm(@PathVariable Long id, Principal principal, Model model) {
+        User user = paymentService.getUserByPrincipal(principal);
+        Payment payment = paymentService.getPaymentById(id);
+        
+        // Получаем список активных счетов пользователя
+        List<Invoice> userInvoices = invoiceService.findActiveInvoicesByUser(user);
+        
+        // Логирование информации о счетах пользователя
+        System.out.println("Получение счетов для пользователя: " + user.getEmail());
+        System.out.println("Количество активных счетов: " + userInvoices.size());
+        
+        for (Invoice invoice : userInvoices) {
+            System.out.println("Счет #" + invoice.getInvoiceId() + ":");
+            System.out.println("  - Баланс: " + invoice.getAmount() + " BYN");
+            System.out.println("  - Основной счет: " + invoice.isMainAccount());
+            System.out.println("  - Дата создания: " + invoice.getCreatedDate());
+            System.out.println("  - Статус: " + invoice.getStatus());
+        }
+
+        model.addAttribute("payment", payment);
+        model.addAttribute("invoices", userInvoices);
+        model.addAttribute("user", user);
+        
+        return "payments/payment-pay";
+    }
+
+    @PostMapping("/{id}/process")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public String processPayment(@PathVariable Long id,
+                               @ModelAttribute("paymentForm") PaymentProcessDTO dto,
+                               Principal principal) {
+        User user = paymentService.getUserByPrincipal(principal);
+        Payment payment = paymentService.getPaymentById(id);
+        Invoice sourceInvoice = invoiceService.getInvoiceById(dto.getInvoiceId());
+        
+        // Проверяем, что счет принадлежит пользователю
+        if (!sourceInvoice.getContract().getUser().equals(user)) {
+            throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на использование этого счета");
+        }
+        
+        // Проверяем сумму для платежа с фиксированной ценой
+        if (payment.isFixedPrice() && !payment.getAmount().equals(dto.getAmount())) {
+            throw new RuntimeException("Сумма платежа должна быть равна " + payment.getAmount());
+        }
+        
+        try {
+            paymentService.processPayment(id, dto.getInvoiceId(), dto.getAmount());
+            return "redirect:/payments/my?success=true";
+        } catch (Exception e) {
+            return "redirect:/payments/" + id + "/pay?error=" + 
+                   URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+        }
     }
 }
