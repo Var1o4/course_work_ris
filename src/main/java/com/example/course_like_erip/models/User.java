@@ -2,7 +2,11 @@ package com.example.course_like_erip.models;
 
 import com.example.course_like_erip.models.Enum.Role;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -13,6 +17,9 @@ import java.util.*;
 @Entity
 @Table(name = "users")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User implements UserDetails, Serializable {
     private static final long serialVersionUID = 1905581085963556480L;
 
@@ -121,6 +128,11 @@ public class User implements UserDetails, Serializable {
     public boolean hasRole(String roleName) {
         return roles.stream()
                 .anyMatch(role -> role.name().equals(roleName));
+    }
+
+
+    public boolean isBanned() {
+        return !active;
     }
 
 

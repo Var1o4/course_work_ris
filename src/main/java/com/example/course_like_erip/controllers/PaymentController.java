@@ -1,17 +1,25 @@
 package com.example.course_like_erip.controllers;
 
 import com.example.course_like_erip.dto.PaymentProcessDTO;
+import com.example.course_like_erip.dto.PaymentXmlDTO;
 import com.example.course_like_erip.models.Invoice;
 import com.example.course_like_erip.models.Payment;
 import com.example.course_like_erip.models.User;
 import com.example.course_like_erip.models.Enum.InvoiceStatus;
 import com.example.course_like_erip.services.InvoiceService;
 import com.example.course_like_erip.services.PaymentService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Unmarshaller;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.nio.file.AccessDeniedException;
@@ -20,6 +28,12 @@ import java.util.List;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
+import java.io.StringReader;
+import java.io.Reader;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 
 @Controller
 @RequestMapping("/payments")
@@ -27,6 +41,7 @@ import java.util.stream.Collectors;
 public class PaymentController {
     private final PaymentService paymentService;
     private final InvoiceService invoiceService;
+    private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
 
     @GetMapping("/groups")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
@@ -60,8 +75,10 @@ public class PaymentController {
 
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public String createPayment(@ModelAttribute Payment payment, Principal principal) {
-        paymentService.savePayment(payment, principal);
+    public String createPayment(@ModelAttribute Payment payment, 
+                              Principal principal,
+                              HttpServletRequest request) {
+        paymentService.savePayment(payment, principal, request);
         return "redirect:/payments/groups";
     }
 
@@ -157,7 +174,8 @@ public class PaymentController {
     @PreAuthorize("hasAnyRole('ROLE_USER')")
     public String processPayment(@PathVariable Long id,
                                @ModelAttribute("paymentForm") PaymentProcessDTO dto,
-                               Principal principal) {
+                               Principal principal,
+                               HttpServletRequest request) {
         User user = paymentService.getUserByPrincipal(principal);
         Payment payment = paymentService.getPaymentById(id);
         Invoice sourceInvoice = invoiceService.getInvoiceById(dto.getInvoiceId());
@@ -173,11 +191,44 @@ public class PaymentController {
         }
         
         try {
-            paymentService.processPayment(id, dto.getInvoiceId(), dto.getAmount());
+            paymentService.processPayment(id, dto.getInvoiceId(), dto.getAmount(), request);
             return "redirect:/payments/my?success=true";
         } catch (Exception e) {
             return "redirect:/payments/" + id + "/pay?error=" + 
                    URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+        }
+    }
+
+    @PostMapping("/upload")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_URFACE')")
+    public String uploadPayments(@RequestParam("xmlFile") MultipartFile file,
+                           Principal principal,
+                           HttpServletRequest request,
+                           HttpServletResponse response) {
+        response.setCharacterEncoding("UTF-8");
+        log.info("Starting file upload process");
+        try {
+            if (file.isEmpty()) {
+                return "redirect:/payments/my?error=" + URLEncoder.encode("Файл пуст", StandardCharsets.UTF_8);
+            }
+            
+            byte[] bytes = file.getBytes();
+            String content = new String(bytes, "windows-1251");
+            
+            // Преобразуем в UTF-8 для дальнейшей обработки
+            content = new String(content.getBytes("windows-1251"), StandardCharsets.UTF_8);
+            
+            JAXBContext context = JAXBContext.newInstance(PaymentXmlDTO.class);
+            Unmarshaller unmarshaller = context.createUnmarshaller();
+            
+            PaymentXmlDTO paymentData = (PaymentXmlDTO) unmarshaller.unmarshal(new StringReader(content));
+            
+            paymentService.processXmlPayments(paymentData, principal, request);
+            return "redirect:/payments/my?success=true";
+        } catch (Exception e) {
+            log.error("Error processing XML file", e);
+            return "redirect:/payments/my?error=" + 
+                   URLEncoder.encode("Ошибка обработки файла: " + e.getMessage(), StandardCharsets.UTF_8);
         }
     }
 }

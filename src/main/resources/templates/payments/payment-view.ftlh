@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ЕРИП 2.0 | Просмотр платежа</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Информация о платеже</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
@@ -148,7 +150,7 @@
 
             <div class="info-row">
                 <span class="info-label">Тип цены:</span>
-                <span class="info-value">${payment.fixedPrice?string('Фиксированная', 'Переменна��')}</span>
+                <span class="info-value">${payment.fixedPrice?string('Фиксированная', 'Переменна')}</span>
             </div>
 
             <div class="info-row">

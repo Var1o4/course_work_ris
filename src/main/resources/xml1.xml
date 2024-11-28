@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<payments>
+    <payment>
+        <name>Тестовый платеж</name>
+        <description>Описание платежа</description>
+        <amount>100.00</amount>
+        <userEmail>12345@mail.com</userEmail>
+        <dueDate>2024-01-31T23:59:59</dueDate>
+    </payment>
+</payments>

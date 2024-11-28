@@ -188,13 +188,13 @@
                                 <td>
                                     <div class="action-buttons">
                                         <#if user??>
-                                            <#if user.hasRole('ROLE_ADMIN') || (user.hasRole('ROLE_URFACE') && payment.user.id == user.id)>
+                                            <#if user.hasRole('ROLE_ADMIN') || (user.hasRole('ROLE_URFACE') && payment.user?? && payment.user.id == user.id)>
                                                 <a href="/payments/edit/${payment.id}" class="btn btn-edit">
                                                     <i class="fas fa-edit"></i>
                                                     Изменить
                                                 </a>
                                                 <form action="/payments/delete/${payment.id}" method="POST" style="display: inline;" 
-                                                      onsubmit="return confirm('Вы уверены? ${payment.group?string('Все вложенные платежи будут удалены!', '')}');">
+                                                      onsubmit="return confirm('Вы уверены?');">
                                                     <input type="hidden" name="_csrf" value="${_csrf.token}">
                                                     <button type="submit" class="btn btn-delete">
                                                         <i class="fas fa-trash"></i>

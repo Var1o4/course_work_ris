@@ -35,7 +35,7 @@ public class Operation {
     private BigDecimal amount;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false, length = 20)
     private OperationType type;
     
     @Column(name = "recipient_account", nullable = false)
@@ -43,4 +43,7 @@ public class Operation {
     
     @Column(name = "operation_date", nullable = false)
     private LocalDateTime operationDate;
+    
+    @Column(name = "description")
+    private String description;
 }

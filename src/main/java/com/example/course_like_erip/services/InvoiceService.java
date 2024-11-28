@@ -1,12 +1,14 @@
 package com.example.course_like_erip.services;
 
 import com.example.course_like_erip.models.Contract;
+import com.example.course_like_erip.models.Enum.ActionType;
 import com.example.course_like_erip.models.Enum.ContractStatus;
 import com.example.course_like_erip.models.Enum.InvoiceStatus;
 import com.example.course_like_erip.models.Invoice;
 import com.example.course_like_erip.models.User;
 import com.example.course_like_erip.repositories.InvoiceRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ import java.util.List;
 public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final ContractService contractService;
+    private final HistoryService historyService;
 
     public Invoice createInvoice(Contract contract, BigDecimal amount, boolean isNationalCurrency) {
       if (contract.getStatus() != ContractStatus.ACTIVE) {
@@ -38,21 +41,31 @@ public class InvoiceService {
       return invoiceRepository.save(invoice);
   }
 
+  public Invoice save(Invoice invoice) {
+    return invoiceRepository.save(invoice);
+}
   
     public List<Invoice> getInvoicesByContract(Contract contract) {
         return invoiceRepository.findByContract(contract);
     }
 
-    public void updateInvoiceStatus(Long invoiceId, InvoiceStatus newStatus) {
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-            .orElseThrow(() -> new EntityNotFoundException("Счет не найден"));
-        
-        invoice.setStatus(newStatus);
-        if (newStatus == InvoiceStatus.DELETED) {
-            invoice.setCloseDate(LocalDateTime.now());
-        }
-        
+    public void updateInvoiceStatus(Long id, InvoiceStatus status, HttpServletRequest request) {
+        Invoice invoice = getInvoiceById(id);
+        String oldStatus = invoice.getStatus().toString();
+        invoice.setStatus(status);
         invoiceRepository.save(invoice);
+        
+        historyService.saveHistory(
+            "invoices",
+            "Старый статус: " + oldStatus,
+            "Новый статус: " + status,
+            invoice.getContract().getUser(),
+            "status",
+            ActionType.STATUS_CHANGE,
+            invoice.getInvoiceId(),
+            request.getRemoteAddr(),
+            request.getHeader("User-Agent")
+        );
     }
 
     public Invoice getInvoiceById(Long id) {

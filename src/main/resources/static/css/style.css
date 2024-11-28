@@ -51,4 +51,17 @@ body {
     background-color: #f8f9fa;
     padding: 1rem 0;
     margin-top: auto;
-} 
+}
+
+.action-type {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.action-type.CREATE { background-color: #4CAF50; color: white; }
+.action-type.UPDATE { background-color: #2196F3; color: white; }
+.action-type.DELETE { background-color: #f44336; color: white; }
+.action-type.LOGIN { background-color: #9C27B0; color: white; }
+.action-type.PAYMENT { background-color: #FF9800; color: white; }
+.action-type.TRANSFER { background-color: #795548; color: white; } 

@@ -1,11 +1,17 @@
 package com.example.course_like_erip.services;
 
+import com.example.course_like_erip.models.Enum.ActionType;
 import com.example.course_like_erip.models.Enum.ContractStatus;
+import com.example.course_like_erip.models.Enum.OperationType;
 import com.example.course_like_erip.models.Enum.Role;
 import com.example.course_like_erip.models.Contract;
+import com.example.course_like_erip.models.Invoice;
+import com.example.course_like_erip.models.Operation;
 import com.example.course_like_erip.models.User;
 import com.example.course_like_erip.repositories.ContractRepository;
 import com.example.course_like_erip.repositories.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -30,6 +36,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final RestTemplateBuilder restTemplateBuilder;
     private final ContractRepository contractRepository;
+    private final HistoryService historyService;
+    private final ContractService contractService;
+    private final InvoiceService invoiceService;
+    private final OperationService operationService;
 
 
     public User getUserByPrincipal(Principal principal) {
@@ -37,7 +47,7 @@ public class UserService {
         return userRepository.findByEmail(principal.getName());
     }
 
-    public boolean createUser(User user) {
+    public boolean createUser(User user, HttpServletRequest request) {
       String email = user.getEmail();
       if (userRepository.findByEmail(email) != null) return false;
       
@@ -58,6 +68,20 @@ public class UserService {
       
       log.info("Saving new User with email: {}", email);
       userRepository.save(user);
+
+      historyService.saveHistory(
+        "users",
+        null,
+        "Регистрация пользователя",
+        user,
+        "email, roles",
+        ActionType.CREATE,
+        user.getId(),
+        request.getRemoteAddr(),
+        request.getHeader("User-Agent")
+    );
+
+
       return true;
   }
 
@@ -190,7 +214,7 @@ private String generateContractNumber() {
            String.format("%04d", new Random().nextInt(10000));
 }
     
-    public void processVerification(Long userId, boolean approved) {
+    public void processVerification(Long userId, boolean approved, HttpServletRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
                 
@@ -201,9 +225,112 @@ private String generateContractNumber() {
         } else {
             userRepository.delete(user);
         }
+
+        historyService.saveHistory(
+        "users",
+        "Статус верификации: не верифицирован",
+        "Статус верификации: " + (approved ? "подтвержден" : "отклонен"),
+        user,
+        "verified, roles",
+        ActionType.VERIFICATION,
+        user.getId(),
+        request.getRemoteAddr(),
+        request.getHeader("User-Agent")
+    );
     }
     
     public List<User> getPendingVerifications() {
         return userRepository.findByVerificationSubmittedTrueAndVerifiedFalse();
+    }
+
+    public User findAdminUser() {
+      return userRepository.findByEmail("1111@mail.com");
+    }
+
+    public List<User> getUsersByRole(Role role) {
+        return userRepository.findByRolesContainingAndVerifiedTrue(role);
+    }
+    
+    public List<User> getAllVerifiedUsers() {
+        return userRepository.findByVerifiedTrue();
+    }
+    
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+            .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+    }
+    
+    public void banUser(Long userId, HttpServletRequest request) {
+        User user = getUserById(userId);
+        user.setActive(false);
+        userRepository.save(user);
+        
+        historyService.saveHistory(
+            "users",
+            "Статус: активен",
+            "Статус: заблокирован",
+            user,
+            "active",
+            ActionType.BAN,
+            userId,
+            request.getRemoteAddr(),
+            request.getHeader("User-Agent")
+        );
+    }
+
+    public void toggleUserBan(Long userId, HttpServletRequest request) {
+        User user = getUserById(userId);
+        user.setActive(!user.isActive());
+        userRepository.save(user);
+        
+        String oldStatus = user.isActive() ? "заблокирован" : "активен";
+        String newStatus = user.isActive() ? "активен" : "заблокирован";
+        
+        historyService.saveHistory(
+            "users",
+            "Статус: " + oldStatus,
+            "Статус: " + newStatus,
+            user,
+            "active",
+            ActionType.BAN,
+            userId,
+            request.getRemoteAddr(),
+            request.getHeader("User-Agent")
+        );
+    }
+
+
+    public List<Map<String, Object>> getSuspiciousUsers() {
+        List<Map<String, Object>> suspiciousUsers = new ArrayList<>();
+        List<User> users = getAllVerifiedUsers();
+        
+        for (User user : users) {
+            List<Contract> contracts = contractService.getContractsByUser(user);
+            
+            for (Contract contract : contracts) {
+                List<Invoice> invoices = invoiceService.getInvoicesByContract(contract);
+                
+                for (Invoice invoice : invoices) {
+                    List<Operation> operations = operationService.getOperationsByBill(invoice);
+                    
+                    // Считаем уникальных отправителей
+                    long uniqueSenders = operations.stream()
+                        .filter(op -> op.getType() == OperationType.TRANSFER_IN)
+                        .map(Operation::getRecipientAccount)
+                        .filter(account -> account != null && !account.isEmpty())
+                        .distinct()
+                        .count();
+                    
+                    if (uniqueSenders > 100) {
+                        Map<String, Object> suspiciousUser = new HashMap<>();
+                        suspiciousUser.put("user", user);
+                        suspiciousUser.put("invoice", invoice);
+                        suspiciousUser.put("sendersCount", uniqueSenders);
+                        suspiciousUsers.add(suspiciousUser);
+                    }
+                }
+            }
+        }
+        return suspiciousUsers;
     }
 }

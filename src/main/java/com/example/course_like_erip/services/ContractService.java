@@ -30,4 +30,9 @@ public class ContractService {
     public List<Contract> getContractsByUser(User user) {
       return contractRepository.findByUser(user);
   }
+
+  public Contract save(Contract contract) {
+    return contractRepository.save(contract);
+}
+
 }

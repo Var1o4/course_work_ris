@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.Principal;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @Controller
 @RequiredArgsConstructor
 public class UserController {
@@ -27,8 +29,8 @@ public class UserController {
 
 
     @PostMapping("/registration")
-    public String createUser(User user, Model model){
-        if(!userService.createUser(user)){
+    public String createUser(User user, Model model, HttpServletRequest request) {
+        if(!userService.createUser(user, request)) {
             model.addAttribute("errorMessage", "Пользователь с email: " + user.getEmail() + " уже существует.");
             return "registration";
         }
@@ -126,13 +128,22 @@ public String submitVerification(@RequestParam String address,
     
     @PostMapping("/admin/verify/{userId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public String verifyUser(@PathVariable Long userId, @RequestParam boolean approved) {
-        userService.processVerification(userId, approved);
+    public String verifyUser(@PathVariable Long userId, @RequestParam boolean approved, HttpServletRequest request) {
+        userService.processVerification(userId, approved, request);
         return "redirect:/admin/verifications";
     }
 
     @GetMapping("/verification-pending")
-public String verificationPending() {
-    return "verification-pending";
-}
+    public String verificationPending(Principal principal, Model model) {
+        if (principal == null) {
+            return "redirect:/login";
+        }
+        
+        User user = userService.getUserByPrincipal(principal);
+        if (user.isVerified()) {
+            return "redirect:/";
+        }
+        
+        return "verification-pending";
+    }
 }

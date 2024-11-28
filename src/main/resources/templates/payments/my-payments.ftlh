@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ЕРИП 2.0 | Мои платежи</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои платежи</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
@@ -323,7 +325,7 @@
             <a href="/" class="menu-item">Главная</a>
             
             <div class="menu-item has-submenu">
-                Платежи
+                Пл
                 <div class="submenu">
                     <#if user?? && (user.hasRole('ROLE_ADMIN') || user.hasRole('ROLE_URFACE'))>
                         <a href="/payments/create">Создать платёж</a>
@@ -352,7 +354,17 @@
     <div class="content">
         <div class="page-header">
             <h2>Мои платежи</h2>
-            <div class="page-actions">
+            <div class="header-actions">
+                <#if user.hasRole('ROLE_ADMIN') || user.hasRole('ROLE_URFACE')>
+                    <form action="/payments/upload" method="POST" enctype="multipart/form-data" class="upload-form" accept-charset="UTF-8">
+                        <input type="hidden" name="_csrf" value="${_csrf.token}">
+                        <input type="file" name="xmlFile" id="xmlFile" accept=".xml" style="display: none;">
+                        <button type="button" class="btn btn-upload" onclick="document.getElementById('xmlFile').click();">
+                            <i class="fas fa-upload"></i> Загрузить платежи (UTF-8)
+                        </button>
+                        <small class="form-text text-muted">Файл должен быть в кодировке UTF-8</small>
+                    </form>
+                </#if>
                 <a href="/payments/create" class="btn btn-create">
                     <i class="fas fa-plus"></i> Создать платёж
                 </a>
@@ -365,10 +377,14 @@
                     <thead>
                         <tr>
                             <th style="width: 30%">Название</th>
-                            <th style="width: 15%">Тип</th>
-                            <th style="width: 15%">Сумма</th>
+                            <th style="width: 20%">Сумма</th>
                             <th style="width: 15%">Статус</th>
-                            <th style="width: 25%">Действия</th>
+                            <th style="width: 15%">
+                                <#if user.hasRole('ROLE_ADMIN')>
+                                    Адресат
+                                </#if>
+                            </th>
+                            <th style="width: 20%">Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -386,11 +402,6 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="type-badge ${payment.group?string('type-group', 'type-payment')}">
-                                        ${payment.group?string('Группа', 'Платёж')}
-                                    </span>
-                                </td>
-                                <td>
                                     <#if !payment.group>
                                         <strong>${(payment.amount)!'0.00'} BYN</strong>
                                     </#if>
@@ -402,6 +413,11 @@
                                         </span>
                                     </#if>
                                 </td>
+                                <td>
+                                    <#if user.hasRole('ROLE_ADMIN') && payment.recipient??>
+                                        ${payment.recipient.email}
+                                    </#if>
+                                </td>
                                 <td class="actions-cell">
                                     <div class="action-buttons">
                                         <#if !payment.group>
@@ -409,14 +425,13 @@
                                                 <i class="fas fa-credit-card"></i> Оплатить
                                             </button>
                                         </#if>
-                                        <#if user.hasRole('ROLE_ADMIN') || (user.hasRole('ROLE_URFACE') && payment.user.id == user.id)>
+                                        <#if user?? && (user.hasRole('ROLE_ADMIN') || (user.hasRole('ROLE_URFACE') && payment.user?? && payment.user.id == user.id))>
                                             <a href="/payments/edit/${payment.id}" class="btn btn-edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <form action="/payments/delete/${payment.id}" method="POST" style="display: inline;" 
-                                                  onsubmit="return confirm('Вы уверены?');">
+                                            <form action="/payments/delete/${payment.id}" method="POST" style="display: inline;">
                                                 <input type="hidden" name="_csrf" value="${_csrf.token}">
-                                                <button type="submit" class="btn btn-delete">
+                                                <button type="submit" class="btn btn-delete" onclick="return confirm('Вы уверены?');">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -436,5 +451,13 @@
             </#if>
         </div>
     </div>
+
+    <script>
+    document.getElementById('xmlFile').addEventListener('change', function() {
+        if (this.files.length > 0) {
+            document.querySelector('.upload-form').submit();
+        }
+    });
+    </script>
 </body>
 </html> 

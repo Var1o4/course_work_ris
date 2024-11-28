@@ -28,29 +28,39 @@ public class VerificationCheckFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
             
         String path = request.getRequestURI();
+        
+        if (isAllowedPath(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         
-        if (auth != null && auth.isAuthenticated() 
-                && !(auth instanceof AnonymousAuthenticationToken)) {
-            try {
-                User user = userService.getUserByPrincipal(auth);
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            User user = userService.findByEmail(auth.getName());
+            
+            if (user != null) {
+                if (user.getEmail().equals("1111@mail.com") || 
+                    user.getRoles().contains(Role.ROLE_ADMIN)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 
-                if (user != null) {
-                    if (user.getEmail().equals("1111@mail.com") || 
-                        user.getRoles().contains(Role.ROLE_ADMIN)) {
+                if (user.isBanned() && !path.equals("/banned")) {
+                    response.sendRedirect("/banned");
+                    return;
+                }
+                
+                if (!user.isVerified()) {
+                    if (path.equals("/verify") || path.equals("/verification-pending") || 
+                        path.equals("/submit-verification")) {
                         filterChain.doFilter(request, response);
                         return;
                     }
                     
-                    if (!user.isVerified() && !isAllowedPath(path)) {
-                        response.sendRedirect("/verify");
-                        return;
-                    }
+                    response.sendRedirect("/verification-pending");
+                    return;
                 }
-            } catch (Exception e) {
-                // Логируем ошибку и пропускаем запрос дальше
-                filterChain.doFilter(request, response);
-                return;
             }
         }
         
@@ -58,8 +68,12 @@ public class VerificationCheckFilter extends OncePerRequestFilter {
     }
     
     private boolean isAllowedPath(String path) {
-        return path.equals("/") || path.startsWith("/verify") 
-               || path.startsWith("/static") || path.equals("/logout")
-               || path.equals("/login") || path.equals("/registration");
+        return path.equals("/") || 
+               path.startsWith("/static") || 
+               path.equals("/logout") ||
+               path.equals("/login") || 
+               path.equals("/registration") ||
+               path.equals("/css/style.css") ||
+               path.matches(".+\\.(js|css|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|svg)$");
     }
 }

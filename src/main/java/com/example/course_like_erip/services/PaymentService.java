@@ -1,10 +1,15 @@
 package com.example.course_like_erip.services;
 
+import com.example.course_like_erip.dto.PaymentXmlDTO;
 import com.example.course_like_erip.models.Invoice;
 import com.example.course_like_erip.models.Payment;
 import com.example.course_like_erip.models.User;
+import com.example.course_like_erip.models.Enum.ActionType;
 import com.example.course_like_erip.repositories.PaymentRepository;
 import com.example.course_like_erip.repositories.UserRepository;
+
+
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +28,8 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final InvoiceService invoiceService;
     private final OperationService operationService;
+    private final HistoryService historyService;
+    private final NotificationService notificationService;
 
     public List<Payment> getRootPaymentGroups() {
         return paymentRepository.findByParentPaymentIsNull();
@@ -49,11 +56,14 @@ public class PaymentService {
     }
 
     public List<Payment> getPaymentsByUser(User user) {
-        return paymentRepository.findByUser(user);
+        if (user.hasRole("ROLE_ADMIN")) {
+            return paymentRepository.findAll();
+        }
+        return paymentRepository.findByUserOrRecipient(user.getId());
     }
 
     @Transactional
-    public Payment savePayment(Payment payment, Principal principal) {
+    public Payment savePayment(Payment payment, Principal principal, HttpServletRequest request) {
         log.info("Attempting to save payment: {}", payment);
         validatePayment(payment);
         User user = getUserByPrincipal(principal);
@@ -61,6 +71,18 @@ public class PaymentService {
         payment.setStatus("ACTIVE");
         Payment savedPayment = paymentRepository.save(payment);
         log.info("Payment saved successfully: {}", savedPayment);
+historyService.saveHistory(
+        "payments",
+        null,
+        "Создан платеж: " + payment.getName(),
+        user,
+        "name, amount, description",
+        ActionType.CREATE,
+        savedPayment.getId(),
+        request.getRemoteAddr(),
+        request.getHeader("User-Agent")
+    );
+
         return savedPayment;
     }
 
@@ -72,7 +94,7 @@ public class PaymentService {
                 throw new RuntimeException("Группа платежей не может иметь сумму");
             }
         } else {
-            if (payment.getParentPayment() == null) {
+            if (payment.getParentPayment() == null && !payment.getName().startsWith("Импортированные платежи")) {
                 log.error("Non-group payment must have parent");
                 throw new RuntimeException("Платёж должен принадлежать группе");
             }
@@ -118,7 +140,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public void processPayment(Long paymentId, Long invoiceId, BigDecimal amount) {
+    public void processPayment(Long paymentId, Long invoiceId, BigDecimal amount, HttpServletRequest request) {
         Payment payment = getPaymentById(paymentId);
         Invoice sourceInvoice = invoiceService.getInvoiceById(invoiceId);
         
@@ -130,7 +152,7 @@ public class PaymentService {
         }
         
         // Обрабатываем операции
-        operationService.processPayment(payment, sourceInvoice, amount);
+        operationService.processPayment(payment, sourceInvoice, amount, request);
         // Обновляем статус платежа
         payment.setStatus("PAID");
         paymentRepository.save(payment);
@@ -155,5 +177,62 @@ public class PaymentService {
                 buildGroupPath(child, currentPath + "/" + child.getName(), paths);
             }
         }
+    }
+
+    @Transactional
+    public void processXmlPayments(PaymentXmlDTO paymentData, Principal principal, HttpServletRequest request) {
+        log.info("Starting XML payments processing");
+        try {
+            Payment rootGroup = getRootGroupForImport();
+            User creator = getUserByPrincipal(principal);
+            
+            for (PaymentXmlDTO.PaymentEntry entry : paymentData.getPayments()) {
+                log.info("Processing payment entry: {}", entry);
+                
+                User recipient = userRepository.findByEmail(entry.getUserEmail());
+                if (recipient == null) {
+                    log.error("User not found: {}", entry.getUserEmail());
+                    continue;
+                }
+                
+                try {
+                    Payment payment = Payment.builder()
+                            .name(entry.getName())
+                            .description(entry.getDescription())
+                            .amount(entry.getAmount())
+                            .status("ACTIVE")
+                            .group(false)
+                            .fixedPrice(true)
+                            .user(creator)
+                            .recipient(recipient)
+                            .parentPayment(rootGroup)
+                            .paymentDueDate(entry.getDueDate())
+                            .build();
+                    
+                    savePayment(payment, principal, request);
+                } catch (Exception e) {
+                    log.error("Error saving payment", e);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error processing payments", e);
+            throw e;
+        }
+    }
+
+    private Payment getRootGroupForImport() {
+        // Ищем существующую группу или создаем новую
+        Payment rootGroup = paymentRepository.findByNameAndGroupTrue("Импортированные платежи");
+        if (rootGroup == null) {
+            rootGroup = Payment.builder()
+                    .name("Импортированные платежи")
+                    .description("Группа для импортированных платежей")
+                    .group(true)
+                    .status("ACTIVE")
+                    .build();
+            paymentRepository.save(rootGroup);
+            log.info("Created root group for imported payments with ID: {}", rootGroup.getId());
+        }
+        return rootGroup;
     }
 } 
