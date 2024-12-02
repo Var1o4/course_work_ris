@@ -83,26 +83,36 @@ public class PaymentController {
     }
 
     @GetMapping("/edit/{id}")
-    @PreAuthorize("hasRole('ROLE_URFACE')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_URFACE')")
     public String editPaymentForm(@PathVariable Long id, Principal principal, Model model) {
         Payment payment = paymentService.getPaymentById(id);
         User user = paymentService.getUserByPrincipal(principal);
-        if (!payment.getUser().getId().equals(user.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на редактирование этого платежа");
+        
+        if (!user.hasRole("ROLE_ADMIN") && 
+            !payment.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                "У вас нет прав на редактирование этого платежа"
+            );
         }
         
         model.addAttribute("payment", payment);
         model.addAttribute("groups", paymentService.getRootPaymentGroups());
+        model.addAttribute("selectedGroup", payment.getParentPayment());
+        model.addAttribute("groupPaths", paymentService.getPaymentGroupPaths());
         return "payments/payment-form";
     }
 
     @PostMapping("/edit/{id}")
-    @PreAuthorize("hasRole('ROLE_URFACE')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_URFACE')")
     public String editPayment(@PathVariable Long id, @ModelAttribute Payment payment, Principal principal) {
         User user = paymentService.getUserByPrincipal(principal);
         Payment existingPayment = paymentService.getPaymentById(id);
-        if (!existingPayment.getUser().getId().equals(user.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на редактирование этого платежа");
+        
+        if (!user.hasRole("ROLE_ADMIN") && 
+            !payment.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                "У вас нет прав на редактирование этого платежа"
+            );
         }
         
         paymentService.updatePayment(id, payment);
@@ -114,8 +124,12 @@ public class PaymentController {
     public String deletePayment(@PathVariable Long id, Principal principal) {
         User user = paymentService.getUserByPrincipal(principal);
         Payment payment = paymentService.getPaymentById(id);
-        if (user.hasRole("ROLE_URFACE") && !payment.getUser().getId().equals(user.getId())) {
-            throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на удаление этого платежа");
+        
+        if (!user.hasRole("ROLE_ADMIN") && 
+            !payment.getUser().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                "У вас нет прав на удаление этого платежа"
+            );
         }
         
         paymentService.deletePayment(id);
@@ -143,12 +157,12 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}/pay")
-    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_USER' , 'ROLE_URFACE')")
     public String showPaymentForm(@PathVariable Long id, Principal principal, Model model) {
         User user = paymentService.getUserByPrincipal(principal);
         Payment payment = paymentService.getPaymentById(id);
         
-        // Получаем список активных счетов пользователя
+        // Получаем список активных счетов поьзователя
         List<Invoice> userInvoices = invoiceService.findActiveInvoicesByUser(user);
         
         // Логирование информации о счетах пользователя
@@ -171,7 +185,7 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/process")
-    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_USER' , 'ROLE_URFACE')")
     public String processPayment(@PathVariable Long id,
                                @ModelAttribute("paymentForm") PaymentProcessDTO dto,
                                Principal principal,
@@ -186,8 +200,13 @@ public class PaymentController {
         }
         
         // Проверяем сумму для платежа с фиксированной ценой
-        if (payment.isFixedPrice() && !payment.getAmount().equals(dto.getAmount())) {
-            throw new RuntimeException("Сумма платежа должна быть равна " + payment.getAmount());
+        if (payment.isFixedPrice()) {
+            BigDecimal paymentAmount = new BigDecimal(payment.getAmount().toString());
+            BigDecimal dtoAmount = new BigDecimal(dto.getAmount().toString());
+            
+            if (paymentAmount.compareTo(dtoAmount) != 0) {
+                throw new RuntimeException("Сумма платежа должна быть равна " + paymentAmount);
+            }
         }
         
         try {

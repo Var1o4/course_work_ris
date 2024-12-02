@@ -13,14 +13,6 @@
             background-color: #f5f5f5;
         }
 
-        .menu {
-            width: 250px;
-            background-color: #2e7d32;
-            color: white;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
         .content {
             flex: 1;
             padding: 30px;
@@ -131,9 +123,7 @@
     </style>
 </head>
 <body>
-    <div class="menu">
-        <#include "../blocks/menu.ftlh">
-    </div>
+    <#include "../common/navigation.ftlh">
 
     <div class="content">
         <nav class="breadcrumb">

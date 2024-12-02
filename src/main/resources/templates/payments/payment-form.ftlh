@@ -127,9 +127,7 @@
     </style>
 </head>
 <body>
-    <div class="menu">
-        <#include "../blocks/menu.ftlh">
-    </div>
+   <#include "../common/navigation.ftlh">
 
     <div class="content">
         <form action="/payments/<#if payment.id??>edit/${payment.id}<#else>create</#if>" method="POST">
@@ -181,7 +179,7 @@
                             <#list groupPaths as path>
                                 <#assign parts = path?split("|")>
                                 <option value="${parts[1]}" 
-                                        <#if payment.parentPayment?? && payment.parentPayment.id == parts[1]>selected</#if>>
+                                    <#if payment.parentPayment?? && payment.parentPayment.id?string == parts[1]>selected</#if>>
                                     ${parts[0]}
                                 </option>
                             </#list>

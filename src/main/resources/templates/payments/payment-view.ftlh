@@ -119,10 +119,7 @@
     </style>
 </head>
 <body>
-    <div class="menu">
-        <#include "../blocks/menu.ftlh">
-    </div>
-
+    <#include "../common/navigation.ftlh">
     <div class="content">
         <nav class="breadcrumb">
             <a href="/payments/my">Мои платежи</a> / ${payment.name}

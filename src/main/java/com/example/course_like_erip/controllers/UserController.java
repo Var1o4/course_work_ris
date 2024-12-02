@@ -1,8 +1,11 @@
 package com.example.course_like_erip.controllers;
 
+import com.example.course_like_erip.models.ExchangeRate;
+import com.example.course_like_erip.models.RefinancingRate;
 import com.example.course_like_erip.models.User;
 import com.example.course_like_erip.services.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -11,17 +14,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
     private final UserService userService;
+    private final RestTemplate restTemplate;
 
 
 
@@ -62,13 +70,7 @@ public class UserController {
         return "profile";
     }
 
-    @GetMapping("/")
-    public String getProfil(Principal principal, Model model)
-    {
-        User user = userService.getUserByPrincipal(principal);
-        model.addAttribute("user", user);
-        return "payment-system";
-    }
+   
 
 
     @GetMapping("/profile/edit")
@@ -145,5 +147,45 @@ public String submitVerification(@RequestParam String address,
         }
         
         return "verification-pending";
+    }
+
+    @GetMapping("/")
+    public String home(Model model) {
+        try {
+            // Получаем курс USD по коду валюты
+            String usdUrl = "https://api.nbrb.by/exrates/rates/USD?parammode=2";
+            ExchangeRate usdRate = restTemplate.getForObject(usdUrl, ExchangeRate.class);
+            log.info("Загружен курс USD: {}", usdRate);
+            
+            // Получаем курс EUR по коду валюты
+            String eurUrl = "https://api.nbrb.by/exrates/rates/EUR?parammode=2";
+            ExchangeRate eurRate = restTemplate.getForObject(eurUrl, ExchangeRate.class);
+            log.info("Загружен курс EUR: {}", eurRate);
+            
+            // Получаем ставку рефинансирования (последнюю)
+            String refinancingUrl = "https://api.nbrb.by/refinancingrate?ondate=" + 
+                LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+            RefinancingRate[] refinancingRates = restTemplate.getForObject(refinancingUrl, RefinancingRate[].class);
+            
+            RefinancingRate refinancingRate = null;
+            if (refinancingRates != null && refinancingRates.length > 0) {
+                refinancingRate = refinancingRates[0];
+                log.info("Загружена ставка рефинансирования: {}", refinancingRate);
+            }
+            
+            if (usdRate != null && eurRate != null && refinancingRate != null) {
+                model.addAttribute("usdRate", usdRate);
+                model.addAttribute("eurRate", eurRate);
+                model.addAttribute("refinancingRate", refinancingRate);
+            } else {
+                throw new RuntimeException("Не удалось загрузить данные о курсах валют");
+            }
+            
+        } catch (Exception e) {
+            log.error("Ошибка при получении курсов валют: ", e);
+            model.addAttribute("error", "Сервис курсов валют временно недоступен");
+        }
+        
+        return "payment-system";
     }
 }

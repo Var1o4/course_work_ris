@@ -94,7 +94,9 @@ historyService.saveHistory(
                 throw new RuntimeException("Группа платежей не может иметь сумму");
             }
         } else {
-            if (payment.getParentPayment() == null && !payment.getName().startsWith("Импортированные платежи")) {
+            if (payment.getParentPayment() == null && 
+                !payment.getName().startsWith("Импортированные платежи") && 
+                !payment.getName().equals("Новый платеж")) {
                 log.error("Non-group payment must have parent");
                 throw new RuntimeException("Платёж должен принадлежать группе");
             }
@@ -108,17 +110,23 @@ historyService.saveHistory(
 
     @Transactional
     public Payment updatePayment(Long id, Payment updatedPayment) {
-        Payment payment = getPaymentById(id);
+        Payment existingPayment = getPaymentById(id);
+        
+        // Если родительский платеж не указан, сохраняем существующий
+        if (updatedPayment.getParentPayment() == null) {
+            updatedPayment.setParentPayment(existingPayment.getParentPayment());
+        }
+        
         validatePayment(updatedPayment);
         
-        payment.setName(updatedPayment.getName());
-        payment.setDescription(updatedPayment.getDescription());
-        payment.setAmount(updatedPayment.isGroup() ? null : updatedPayment.getAmount());
-        payment.setFixedPrice(updatedPayment.isFixedPrice());
-        payment.setGroup(updatedPayment.isGroup());
-        payment.setParentPayment(updatedPayment.isGroup() ? null : updatedPayment.getParentPayment());
+        existingPayment.setName(updatedPayment.getName());
+        existingPayment.setDescription(updatedPayment.getDescription());
+        existingPayment.setAmount(updatedPayment.isGroup() ? null : updatedPayment.getAmount());
+        existingPayment.setFixedPrice(updatedPayment.isFixedPrice());
+        existingPayment.setGroup(updatedPayment.isGroup());
+        existingPayment.setParentPayment(updatedPayment.getParentPayment());
         
-        return paymentRepository.save(payment);
+        return paymentRepository.save(existingPayment);
     }
 
     @Transactional

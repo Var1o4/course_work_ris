@@ -2,88 +2,67 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Задолженности</title>
+    <title>ЕРИП 2.0 | Задолженности</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        .notifications-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 20px;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            background-color: #f5f5f5;
         }
 
-        .notification-card {
+        .content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .debts-container {
             background: white;
             border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .notification-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .notification-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .notification-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-        }
-
-        .notification-icon.warning {
-            background-color: #fff3e0;
-            color: #f57c00;
-        }
-
-        .notification-icon.danger {
-            background-color: #ffebee;
-            color: #d32f2f;
-        }
-
-        .notification-icon.info {
-            background-color: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .notification-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin: 0;
-        }
-
-        .notification-content {
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .notification-footer {
+        .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #81c784;
+            padding-bottom: 15px;
         }
 
-        .notification-date {
-            color: #999;
-            font-size: 14px;
+        .page-header h2 {
+            color: #2e7d32;
+            margin: 0;
         }
 
-        .notification-actions {
-            display: flex;
-            gap: 10px;
+        .debts-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+        }
+
+        .debts-table th {
+            background-color: #f8f9fa;
+            color: #2e7d32;
+            padding: 15px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .debts-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .btn {
@@ -97,92 +76,95 @@
             cursor: pointer;
             font-size: 14px;
             text-decoration: none;
-            transition: background-color 0.2s;
+            transition: all 0.3s;
         }
 
         .btn-pay {
+            background-color: #2e7d32;
+            color: white;
+        }
+
+        .btn-pay:hover {
+            background-color: #1b5e20;
+        }
+
+        .btn-view {
             background-color: #1976d2;
             color: white;
         }
 
-        .btn-view {
-            background-color: #757575;
-            color: white;
+        .btn-view:hover {
+            background-color: #1565c0;
         }
 
         .empty-state {
             text-align: center;
             padding: 40px;
             color: #757575;
+            background: white;
+            border-radius: 10px;
+            margin-top: 20px;
         }
 
         .empty-state i {
             font-size: 48px;
-            color: #bdbdbd;
+            color: #81c784;
             margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <#include "../blocks/menu.ftlh">
-    </div>
-
+    <#include "../common/navigation.ftlh">
+    
     <div class="content">
-        <div class="page-header">
-            <h2>Задолженности</h2>
-        </div>
+        <div class="dashboard">
+            <div class="debts-container">
+                <div class="page-header">
+                    <h2>Задолженности</h2>
+                </div>
 
-        <div class="notifications-grid">
-    <#if notifications?? && notifications?size gt 0>
-        <#list notifications as notification>
-            <div class="notification-card">
-                <div class="notification-header">
-                    <div class="notification-icon ${(notification.type?? && notification.type?lower_case == 'WARNING')?then('warning', 
-                         (notification.type?? && notification.type?lower_case == 'DANGER')?then('danger', 'info'))}">
-                        <#if notification.type?? && notification.type == 'WARNING'>
-                            <i class="fas fa-exclamation-triangle"></i>
-                        <#elseif notification.type?? && notification.type == 'DANGER'>
-                            <i class="fas fa-exclamation-circle"></i>
-                        <#else>
-                            <i class="fas fa-info-circle"></i>
-                        </#if>
+                <#if debts?? && debts?size gt 0>
+                    <table class="debts-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Сумма</th>
+                                <th>Срок оплаты</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <#list debts as debt>
+                                <tr>
+                                    <td>${debt.name}</td>
+                                    <td>${debt.amount} BYN</td>
+                                    <td>${debt.dueDate}</td>
+                                    <td>
+                                        <a href="/debts/${debt.id}/pay" class="btn btn-pay">
+                                            <i class="fas fa-credit-card"></i> Оплатить
+                                        </a>
+                                        <a href="/debts/${debt.id}" class="btn btn-view">
+                                            <i class="fas fa-eye"></i> Просмотр
+                                        </a>
+                                    </td>
+                                </tr>
+                            </#list>
+                        </tbody>
+                    </table>
+                <#else>
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>У вас нет задолженностей</h3>
+                        <p>Все платежи выполнены вовремя</p>
                     </div>
-                    <h3 class="notification-title">${notification.title!'Уведомление'}</h3>
-                </div>
-                <div class="notification-content">
-                    ${notification.message!''}
-                </div>
-                <div class="notification-footer">
-                    <span class="notification-date">
-                        <#if notification.createdDate??>
-                            ${notification.createdDate?string("dd.MM.yyyy HH:mm")}
-                        <#else>
-                            Дата не указана
-                        </#if>
-                    </span>
-                    <div class="notification-actions">
-                        <#if notification.paymentId??>
-                            <a href="/payments/${notification.paymentId}/pay" class="btn btn-pay">
-                                <i class="fas fa-credit-card"></i> Оплатить
-                            </a>
-                        </#if>
-                        <#if notification.link??>
-                            <a href="${notification.link}" class="btn btn-view">
-                                <i class="fas fa-eye"></i> Просмотр
-                            </a>
-                        </#if>
-                    </div>
-                </div>
+                </#if>
             </div>
-        </#list>
-    <#else>
-        <div class="empty-state">
-            <i class="fas fa-check-circle"></i>
-            <p>У вас нет уведомлений о задолженностях</p>
         </div>
-    </#if>
-</div>
     </div>
 </body>
 </html> 

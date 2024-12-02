@@ -13,34 +13,31 @@
             background-color: #f5f5f5;
         }
 
-        .menu {
-            width: 250px;
-            background-color: #2e7d32;
-            color: white;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
         .content {
             flex: 1;
             padding: 30px;
         }
 
-        .account-card {
+        .info-card {
             background: white;
             border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 25px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .account-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 25px;
             padding-bottom: 15px;
+            border-bottom: 2px solid #81c784;
+        }
+
+        .account-header h2 {
+            color: #2e7d32;
+            margin: 0;
         }
 
         .account-balance {
@@ -49,32 +46,76 @@
             color: #2e7d32;
         }
 
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            color: white;
+        .account-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
-        .status-active { background-color: #4caf50; }
-        .status-frozen { background-color: #2196f3; }
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #2e7d32;
+        }
 
-        .btn {
-            padding: 8px 16px;
+        .transfer-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .transfer-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: white;
-            text-decoration: none;
             font-size: 14px;
         }
 
-        .btn-primary { background-color: #2e7d32; }
-        .btn-secondary { background-color: #757575; }
-        .btn-warning { background-color: #f57c00; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #2e7d32;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .transactions-section {
+            margin-top: 30px;
+        }
 
         .transactions-table {
             width: 100%;
@@ -86,24 +127,31 @@
         .transactions-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #eee;
         }
 
         .transactions-table th {
-            background-color: #f5f5f5;
-            font-weight: 600;
-        }
-
-        .amount {
-            font-weight: 600;
-        }
-
-        .amount.positive {
+            background-color: #f8f9fa;
             color: #2e7d32;
         }
 
+        .amount.positive {
+            color: #28a745;
+        }
+
         .amount.negative {
-            color: #d32f2f;
+            color: #dc3545;
+        }
+
+        #expensesChart {
+            width: 100% !important;
+            height: 400px !important;
+            margin: 20px 0;
+        }
+
+        .chart-container {
+            position: relative;
+            margin: auto;
         }
 
         .breadcrumb {
@@ -115,83 +163,16 @@
             color: #2e7d32;
             text-decoration: none;
         }
-
-        .transfer-form {
-            margin-top: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        #expensesChart {
-            width: 100%;
-            height: 400px !important;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <div class="app-title">
-            ЕРИП 2.0
-        </div>
-        <div class="menu-items">
-            <a href="/" class="menu-item">Главная</a>
-            <div class="menu-item has-submenu">
-                Платежи
-                <div class="submenu">
-                    <#if user?? && (user.hasRole('ROLE_ADMIN') || user.hasRole('ROLE_URFACE'))>
-                        <a href="/payments/create">Создать платёж</a>
-                        <a href="/payments/my">Мои платежи</a>
-                    </#if>
-                    <a href="/payments/groups">Все платежи</a>
-                </div>
-            </div>
-            <a href="/bills" class="menu-item">Счета</a>
-            <a href="/history" class="menu-item">История</a>
-            <a href="/debts" class="menu-item">Задолженности</a>
-
-            <#if user??>
-                <form action="/logout" method="post">
-                    <input type="hidden" name="_csrf" value="${_csrf.token}">
-                    <button type="submit" class="logout-btn">Выйти</button>
-                </form>
-            <#else>
-                <a href="/login" class="menu-item">Войти</a>
-                <a href="/registration" class="menu-item">Регистрация</a>
-            </#if>
-        </div>
-    </div>
-
+    <#include "../common/navigation.ftlh">
     <div class="content">
         <nav class="breadcrumb">
             <a href="/bills">Счета</a> / Счет #${bill.invoiceId}
         </nav>
 
-        <div class="account-card">
+        <div class="info-card">
             <div class="account-header">
                 <div>
                     <h2>Счет #${bill.invoiceId}</h2>
@@ -203,12 +184,18 @@
             </div>
 
             <div class="account-info">
-                <p>
+                <div class="info-item">
                     <strong>Статус:</strong>
                     <span class="status-badge status-${bill.status?lower_case}">${bill.status}</span>
-                </p>
-                <p><strong>Тип валюты:</strong> ${bill.nationalCurrency?string('BYN (Национальная)', 'USD (Иностранная)')}</p>
-                <p><strong>Основной счет:</strong> ${bill.mainAccount?string('Да', 'Нет')}</p>
+                </div>
+                <div class="info-item">
+                    <strong>Тип валюты:</strong>
+                    ${bill.nationalCurrency?string('BYN (Национальная)', 'USD (Иностранная)')}
+                </div>
+                <div class="info-item">
+                    <strong>Основной счет:</strong>
+                    ${bill.mainAccount?string('Да', 'Нет')}
+                </div>
             </div>
 
             <div class="account-actions">
@@ -238,13 +225,16 @@
                 </#if>
             </div>
         </div>
-<#if isOwner>
-        <div class="account-card">
-            <h3>Перевод средств</h3>
+
+        <#if isOwner>
+        <div class="info-card">
+            <div class="account-header">
+                <h2>Перевод средств</h2>
+            </div>
             <form action="/bills/${bill.invoiceId}/transfer" method="POST" class="transfer-form">
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
                 <div class="form-group">
-                    <label for="targetInvoiceId">Счет получателя:</label>
+                    <label for="targetInvoiceId">Счет получателя</label>
                     <select name="targetInvoiceId" id="targetInvoiceId" class="form-control" required>
                         <option value="">Выберите счет</option>
                         <#list userInvoices as targetBill>
@@ -255,19 +245,28 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="amount">Сумма перевода:</label>
+                    <label for="amount">Сумма перевода</label>
                     <input type="number" name="amount" id="amount" class="form-control" 
                            step="0.01" min="0.01" required>
                 </div>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-exchange-alt"></i> Выполнить перевод
+                    <i class="fas fa-exchange-alt"></i> Перевести
                 </button>
             </form>
         </div>
         </#if>
 
-        <div class="account-card">
-            <h3>История операций</h3>
+        <div class="info-card">
+            <div class="account-header">
+                <h2>Статистика расходов</h2>
+            </div>
+            <canvas id="expensesChart"></canvas>
+        </div>
+
+        <div class="info-card">
+            <div class="account-header">
+                <h2>История операций</h2>
+            </div>
             <#if transactions?? && transactions?size gt 0>
                 <table class="transactions-table">
                     <thead>
@@ -282,9 +281,7 @@
                     <tbody>
                         <#list transactions as transaction>
                             <tr>
-                                <td>
-                                    
-                                </td>
+                                <td>${transaction.date!''}</td>
                                 <td>
                                     <#if transaction.type == 'TRANSFER_OUT'>
                                         Исходящий перевод
@@ -299,31 +296,17 @@
                                     </#if>
                                 </td>
                                 <td class="amount ${(transaction.type == 'DEPOSIT' || transaction.type == 'TRANSFER_IN')?then('positive','negative')}">
-                                    <#if transaction.type == 'DEPOSIT' || transaction.type == 'TRANSFER_IN'>
-                                        +${transaction.amount?string(",##0.00")} BYN
-                                    <#else>
-                                        -${transaction.amount?string(",##0.00")} BYN
-                                    </#if>
+                                    ${transaction.amount!''} BYN
                                 </td>
-                                <td>
-                                    ${(transaction.balanceAfter?string(",##0.00"))!''} BYN
-                                </td>
+                                <td>${transaction.balanceAfter!''} BYN</td>
                                 <td>${transaction.description!''}</td>
                             </tr>
                         </#list>
                     </tbody>
                 </table>
             <#else>
-                <div class="empty-state">
-                    <i class="fas fa-history"></i>
-                    <p>История операций пуста</p>
-                </div>
+                <p>История операций пуста</p>
             </#if>
-        </div>
-
-        <div class="card">
-            <h3>Статистика расходов за последние 5 месяцев</h3>
-            <canvas id="expensesChart"></canvas>
         </div>
     </div>
 
@@ -341,9 +324,9 @@
                 </#if>
             ];
             
-            console.log('Monthly expenses data:', monthlyExpenses);
+            const canvas = document.getElementById('expensesChart');
+            const ctx = canvas.getContext('2d');
             
-            const ctx = document.getElementById('expensesChart').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -362,20 +345,11 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            suggestedMin: 0,
-                            suggestedMax: 10000,
                             ticks: {
-                                stepSize: 1000,
                                 callback: function(value) {
                                     return value + ' BYN';
                                 }
                             }
-                        }
-                    },
-                    layout: {
-                        padding: {
-                            top: 20,
-                            bottom: 20
                         }
                     },
                     plugins: {

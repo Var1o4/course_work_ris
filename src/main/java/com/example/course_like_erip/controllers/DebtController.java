@@ -33,7 +33,9 @@ public class DebtController {
         User user = userService.getUserByPrincipal(principal);
         List<Notification> notifications = notificationService.getNotificationsByUser(user);
         
-        model.addAttribute("notifications", notifications);
+        log.info("Получен список уведомлений для пользователя {}: {}", user.getEmail(), notifications);
+        
+        model.addAttribute("debts", notifications);
         model.addAttribute("user", user);
         return "debts/debts";
     }

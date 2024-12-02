@@ -111,8 +111,7 @@
         }
 
         .btn-freeze {
-            background-color: #1976d2;
-            color: white;
+            background-color: #2196F3;
         }
 
         .empty-state {
@@ -234,40 +233,60 @@
             font-size: 12px;
             margin-left: 8px;
         }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .action-btn:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .btn-freeze {
+            background-color: #2196F3;
+        }
+
+        .btn-main {
+            background-color: #FFC107;
+        }
+
+        .btn-main:hover {
+            background-color: #FFA000;
+        }
+
+        .btn-details {
+            background-color: #757575;
+        }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <div class="app-title">
-            ЕРИП 2.0
-        </div>
-        <div class="menu-items">
-            <a href="/" class="menu-item">Главная</a>
-            <div class="menu-item has-submenu">
-                Платежи
-                <div class="submenu">
-                    <#if user?? && (user.hasRole('ROLE_ADMIN') || user.hasRole('ROLE_URFACE'))>
-                        <a href="/payments/create">Создать платёж</a>
-                        <a href="/payments/my">Мои платежи</a>
-                    </#if>
-                    <a href="/payments/groups">Все платежи</a>
-                </div>
-            </div>
-            <a href="/bills" class="menu-item">Счета</a>
-            <a href="/history" class="menu-item">История</a>
-            <a href="/debts" class="menu-item">Задолженности</a>
-
-            <#if user??>
-                <form action="/logout" method="post">
-                    <input type="hidden" name="_csrf" value="${_csrf.token}">
-                    <button type="submit" class="logout-btn">Выйти</button>
-                </form>
-            <#else>
-                <a href="/login" class="menu-item">Войти</a>
-                <a href="/registration" class="menu-item">Регистрация</a>
-            </#if>
-        </div>
-    </div>
+   <#include "../common/navigation.ftlh">
 
     <div class="content">
         <div class="dashboard">
@@ -320,22 +339,23 @@
                                         </td>
                                         <td>
                                             <div class="action-buttons">
-                                                <#if !bill.mainAccount>
-                                                    <form action="/bills/${bill.invoiceId}/set-main" method="POST" style="display: inline;">
-                                                        <input type="hidden" name="_csrf" value="${_csrf.token}">
-                                                        <button type="submit" class="btn btn-set-main" title="Сделать основным">
-                                                            <i class="fas fa-star"></i>
-                                                        </button>
-                                                    </form>
-                                                </#if>
-                                                <#if bill.status == 'ACTIVE'>
-                                                    <form action="/bills/${bill.invoiceId}/freeze" method="post" style="display: inline;">
-                                                        <input type="hidden" name="_csrf" value="${_csrf.token}">
-                                                        <button type="submit" class="btn btn-freeze">
-                                                            <i class="fas fa-snowflake"></i> Заморозить
-                                                        </button>
-                                                    </form>
-                                                </#if>
+                                                <form action="/bills/${bill.invoiceId}/freeze" method="POST" style="margin: 0;">
+                                                    <input type="hidden" name="_csrf" value="${_csrf.token}">
+                                                    <button type="submit" class="action-btn btn-freeze" data-tooltip="Заморозить счёт">
+                                                        <i class="fas fa-snowflake"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <form action="/bills/${bill.invoiceId}/set-main" method="POST" style="margin: 0;">
+                                                    <input type="hidden" name="_csrf" value="${_csrf.token}">
+                                                    <button type="submit" class="action-btn btn-main" data-tooltip="Сделать основным">
+                                                        <i class="fas fa-star"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <a href="/bills/${bill.invoiceId}/details" class="action-btn btn-details" data-tooltip="Подробнее">
+                                                    <i class="fas fa-info"></i>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>

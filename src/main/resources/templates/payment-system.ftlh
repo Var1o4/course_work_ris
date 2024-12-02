@@ -257,42 +257,151 @@
         .useful-links a:hover {
             background-color: #f5f5f5;
         }
+
+        .exchange-rates-container {
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .rates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .rate-card {
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .period-selector {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .period-selector .btn {
+            margin: 0 5px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+
+        .period-selector .btn.active {
+            background: #007bff;
+            color: white;
+        }
+
+        /* Стили для курсов валют и ставки рефинансирования */
+        .rate-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .rate-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .rate-card h4 {
+            margin: 0 0 15px 0;
+            color: #2e7d32;
+            font-size: 18px;
+        }
+
+        .currency-rate {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .currency-rate:last-child {
+            border-bottom: none;
+        }
+
+        .rate-value {
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        /* Стили для новостей и обновлений */
+        .news-updates {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .news-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s;
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .news-date {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .news-title {
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 8px;
+        }
+
+        .news-content {
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .news-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .tag-update {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .tag-news {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .tag-maintenance {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <div class="app-title">
-            ЕРИП 2.0
-        </div>
-        <div class="menu-items">
-            <a href="/" class="menu-item">Главная</a>
-            
-            <div class="menu-item has-submenu">
-                Платежи
-                <div class="submenu">
-                    <#if user?? && (user.hasRole('ROLE_ADMIN') || user.hasRole('ROLE_URFACE'))>
-                        <a href="/payments/create">Создать платёж</a>
-                        <a href="/payments/my">Мои платежи</a>
-                    </#if>
-                    <a href="/payments/groups">Все платежи</a>
-                </div>
-            </div>
-
-            <a href="/bills" class="menu-item">Счета</a>
-            <a href="/history" class="menu-item">История</a>
-            <a href="/debts" class="menu-item">Задолженности</a>
-
-            <#if user??>
-                <form action="/logout" method="post">
-                    <input type="hidden" name="_csrf" value="${_csrf.token}">
-                    <button type="submit" class="logout-btn">Выйти</button>
-                </form>
-            <#else>
-                <a href="/login" class="menu-item">Войти</a>
-                <a href="/registration" class="menu-item">Регистрация</a>
-            </#if>
-        </div>
-    </div>
+  
+        <#include "common/navigation.ftlh">
 
     <div class="content">
         <#if breadcrumbs??>
@@ -310,38 +419,65 @@
         </#if>
 
         <div class="dashboard">
-            <div class="news-section">
-                <h2 class="news-header">Новости и обновления</h2>
+            <div class="news-updates">
+                <h3>Новости и обновления</h3>
+                <div class="news-item">
+                    <div class="news-date">01.12.2024</div>
+                    <span class="news-tag tag-update">Обновление</span>
+                    <div class="news-title">Обновление системы до версии 2.5</div>
+                    <div class="news-content">
+                        Добавлен новый функционал графиков курсов валют, улучшена производительность системы, 
+                        оптимизирована работа с платежами.
+                    </div>
+                </div>
                 
                 <div class="news-item">
-                    <div class="news-date">15 ноября 2024</div>
-                    <div class="news-title">Запуск новой версии платежной системы</div>
+                    <div class="news-date">30.11.2024</div>
+                    <span class="news-tag tag-maintenance">Тех. работы</span>
+                    <div class="news-title">Плановые технические работы</div>
                     <div class="news-content">
-                        Мы рады представить обновленную версию нашей платежной системы с улучшенным интерфейсом 
-                        и новыми возможностями. Теперь оплата услуг стала еще удобнее и быстрее.
+                        В ночь с 30.11 на 01.12 будут проводиться плановые технические работы. 
+                        Возможны кратковременные перерывы в работе сервиса.
                     </div>
                 </div>
-
+                
                 <div class="news-item">
-                    <div class="news-date">10 ноября 2024</div>
-                    <div class="news-title">Добавлены новые способы оплаты</div>
+                    <div class="news-date">28.11.2024</div>
+                    <span class="news-tag tag-news">Новость</span>
+                    <div class="news-title">Запуск программы лояльности</div>
                     <div class="news-content">
-                        Расширен список доступных способов оплаты. Теперь вы можете использовать 
-                        электронные кошельки и криптовалюту для оплаты услуг.
-                    </div>
-                </div>
-
-                <div class="news-item">
-                    <div class="news-date">5 ноября 2024</div>
-                    <div class="news-title">Обновление системы безопасности</div>
-                    <div class="news-content">
-                        Внедрена двухфакторная аутентификация и улучшена система защиты персональных данных. 
-                        Ваши платежи стали еще безопаснее.
+                        Теперь за каждый платеж вы получаете бонусные баллы, которые можно использовать 
+                        для оплаты следующих платежей. Подробности в разделе "Программа лояльности".
                     </div>
                 </div>
             </div>
 
             <div class="side-section">
+             <div class="info-card">
+  
+                    <div class="rate-cards">
+                        <div class="rate-card">
+                            <h3>Курсы валют</h3>
+                            <div id="exchangeRates">
+                                <div class="currency-rate" id="usdRate">
+                                    <a href="/exchange-rates/chart"><span>USD:</span></a>
+                                    <span class="rate-value">Загрузка...</span>
+                                </div>
+                                <div class="currency-rate" id="eurRate">
+                                     <a href="/exchange-rates/chart?currency=EUR"><span>EUR:</span></a>
+                                    <span class="rate-value">Загрузка...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rate-card">
+                            <h3>Ставка рефинансирования</h3>
+                            <div id="refinancingRate">
+                                <span class="rate-value">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="info-card">
                     <h3>Статистика</h3>
                     <div class="quick-stats">
@@ -380,8 +516,41 @@
                     <p>Сб-Вс: 10:00 - 18:00</p>
                     <p>Технические работы: каждый последний четверг месяца с 02:00 до 05:00</p>
                 </div>
+
+               
             </div>
         </div>
     </div>
+
+    <#noparse>
+    <script>
+    const API_BASE = 'https://api.nbrb.by/';
+
+    async function loadRates() {
+        try {
+            const usdResponse = await fetch(`${API_BASE}exrates/rates/USD?parammode=2`);
+            const usdData = await usdResponse.json();
+            document.querySelector('#usdRate .rate-value').textContent = 
+                `${usdData.Cur_OfficialRate} BYN`;
+
+            const eurResponse = await fetch(`${API_BASE}exrates/rates/EUR?parammode=2`);
+            const eurData = await eurResponse.json();
+            document.querySelector('#eurRate .rate-value').textContent = 
+                `${eurData.Cur_OfficialRate} BYN`;
+
+            const refinResponse = await fetch(`${API_BASE}refinancingrate`);
+            const refinData = await refinResponse.json();
+            document.querySelector('#refinancingRate .rate-value').textContent = 
+                `${refinData[0].Value}%`;
+        } catch (error) {
+            console.error('Ошибка загрузки данных:', error);
+            document.querySelector('#exchangeRates').innerHTML = 
+                '<div class="error">Сервис временно недоступен</div>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadRates);
+    </script>
+    </#noparse>
 </body>
 </html> 
