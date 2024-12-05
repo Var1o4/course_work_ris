@@ -45,4 +45,5 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ContractStatus status;
+
 }

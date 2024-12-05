@@ -30,6 +30,7 @@ public class PaymentService {
     private final OperationService operationService;
     private final HistoryService historyService;
     private final NotificationService notificationService;
+    private final UserService userService;
 
     public List<Payment> getRootPaymentGroups() {
         return paymentRepository.findByParentPaymentIsNull();
@@ -153,17 +154,33 @@ historyService.saveHistory(
         Invoice sourceInvoice = invoiceService.getInvoiceById(invoiceId);
         
         // Проверяем валидность платежа
-        validatePayment(payment);
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             log.error("Payment amount must be positive");
             throw new RuntimeException("Сумма платежа должна быть положительной");
         }
         
-        // Обрабатываем операции
-        operationService.processPayment(payment, sourceInvoice, amount, request);
-        // Обновляем статус платежа
-        payment.setStatus("PAID");
-        paymentRepository.save(payment);
+        try {
+            // Обрабатываем операции
+            operationService.processPayment(payment, sourceInvoice, amount, request);
+            
+            // Если это именной платеж (есть получатель), удаляем его после оплаты
+            if (payment.getRecipient() != null) {
+                log.info("Deleting personal payment after successful processing: {}", paymentId);
+                paymentRepository.delete(payment);
+            } else {
+                // Иначе просто обновляем статус
+                payment.setStatus("PAID");
+                paymentRepository.save(payment);
+            }
+            
+            // Логируем успешную операцию
+            log.info("Payment {} processed successfully. Amount: {}, Invoice: {}", 
+                    paymentId, amount, invoiceId);
+                
+        } catch (Exception e) {
+            log.error("Error processing payment {}: {}", paymentId, e.getMessage());
+            throw new RuntimeException("Ошибка при обработке платежа: " + e.getMessage());
+        }
     }
 
     public List<String> getPaymentGroupPaths() {
@@ -187,60 +204,61 @@ historyService.saveHistory(
         }
     }
 
+    private Payment getRootGroupForImport() {
+      // Ищем существующую группу или создаем новую
+      Payment rootGroup = paymentRepository.findByNameAndGroupTrue("Импортированные платежи");
+      if (rootGroup == null) {
+          rootGroup = Payment.builder()
+                  .name("Импортированные платежи")
+                  .description("Группа для импортированных платежей")
+                  .group(true)
+                  .status("ACTIVE")
+                  .build();
+          paymentRepository.save(rootGroup);
+          log.info("Created root group for imported payments with ID: {}", rootGroup.getId());
+      }
+      return rootGroup;
+  }
+
     @Transactional
     public void processXmlPayments(PaymentXmlDTO paymentData, Principal principal, HttpServletRequest request) {
-        log.info("Starting XML payments processing");
         try {
-            Payment rootGroup = getRootGroupForImport();
             User creator = getUserByPrincipal(principal);
+            Payment rootGroup = getRootGroupForImport();
             
             for (PaymentXmlDTO.PaymentEntry entry : paymentData.getPayments()) {
-                log.info("Processing payment entry: {}", entry);
-                
-                User recipient = userRepository.findByEmail(entry.getUserEmail());
-                if (recipient == null) {
-                    log.error("User not found: {}", entry.getUserEmail());
-                    continue;
-                }
-                
                 try {
+                    log.info("Processing XML payment entry: name={}, description={}", 
+                            entry.getName(), entry.getDescription());
+                    
+                    User recipient = userService.findByEmail(entry.getUserEmail());
+                    if (recipient == null) {
+                        log.error("Recipient not found for email: {}", entry.getUserEmail());
+                        continue;
+                    }
+                    
                     Payment payment = Payment.builder()
                             .name(entry.getName())
                             .description(entry.getDescription())
                             .amount(entry.getAmount())
                             .status("ACTIVE")
-                            .group(false)
-                            .fixedPrice(true)
                             .user(creator)
                             .recipient(recipient)
                             .parentPayment(rootGroup)
                             .paymentDueDate(entry.getDueDate())
                             .build();
                     
+                    log.info("Saving payment with name: {}, description: {}", 
+                            payment.getName(), payment.getDescription());
+                            
                     savePayment(payment, principal, request);
                 } catch (Exception e) {
-                    log.error("Error saving payment", e);
+                    log.error("Error saving payment: ", e);
                 }
             }
         } catch (Exception e) {
-            log.error("Error processing payments", e);
+            log.error("Error processing payments: ", e);
             throw e;
         }
-    }
-
-    private Payment getRootGroupForImport() {
-        // Ищем существующую группу или создаем новую
-        Payment rootGroup = paymentRepository.findByNameAndGroupTrue("Импортированные платежи");
-        if (rootGroup == null) {
-            rootGroup = Payment.builder()
-                    .name("Импортированные платежи")
-                    .description("Группа для импортированных платежей")
-                    .group(true)
-                    .status("ACTIVE")
-                    .build();
-            paymentRepository.save(rootGroup);
-            log.info("Created root group for imported payments with ID: {}", rootGroup.getId());
-        }
-        return rootGroup;
     }
 } 

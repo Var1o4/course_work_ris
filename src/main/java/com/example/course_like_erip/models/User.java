@@ -49,6 +49,7 @@ public class User implements UserDetails, Serializable {
 
     @Column(length = 1000000)
     private byte[] personalPhoto;
+    
     @Column(length = 1000000)
     private byte[] passportPhoto;
 

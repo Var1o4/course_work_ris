@@ -3,246 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль пользователя</title>
-
+    <title>ЕРИП 2.0 | Профиль</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        html {
-            background: #e8f5e9;
-        }
-
         body {
-            font-family: Roboto, sans-serif;
-            font-size: 14px;
-            color: #2e7d32;
-            letter-spacing: 0.2px;
-            display: flex;
-            height: 100vh;
-            margin: 0 5% 0 5%;
-            box-shadow: -10px -10px 20px 30px rgba(0, 0, 0, 0.1);
-            background-color: #ffffff;
-        }
-
-        .menu {
-            width: 15%;
-            background-color: #2e7d32;
-            padding: 20px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .menu ul {
-            list-style-type: none;
-            padding: 0;
+            font-family: Arial, sans-serif;
             margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
         }
 
-        .menu li {
-            margin-bottom: 15px;
-        }
-
-        .menu a {
-            text-decoration: none;
-            color: #ffffff;
-            display: block;
-            padding: 10px;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-
-        .menu a:hover {
-            background-color: #1b5e20;
-        }
-
-        .menu a.active {
-            background-color: #1b5e20;
-            border-left: 4px solid #81c784;
-        }
-
-        .profile-container {
+        .content {
             flex: 1;
             padding: 30px;
-            background-color: #ffffff;
+        }
+
+        .dashboard {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .profile-header {
             display: flex;
             align-items: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background-color: #f1f8e9;
-            border-radius: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
         }
 
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
+        .profile-icon {
+            width: 60px;
+            height: 60px;
+            background-color: #e8f5e9;
             border-radius: 50%;
-            background-color: #2e7d32;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 36px;
             margin-right: 20px;
-        }
-
-        .profile-info {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .info-card {
-            background-color: #f1f8e9;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .info-card h3 {
             color: #2e7d32;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #81c784;
-            padding-bottom: 5px;
+            font-size: 24px;
         }
 
         .info-row {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 5px 0;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #f5f5f5;
         }
 
         .info-label {
-            color: #666;
-            font-weight: 500;
-        }
-
-        .info-value {
-            color: #2e7d32;
-            font-weight: 600;
-        }
-
-        .edit-button {
-            background-color: #2e7d32;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
-
-        .edit-button:hover {
-            background-color: #1b5e20;
-        }
-
-        .account-status {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
+            width: 200px;
+            color: #757575;
             font-weight: bold;
         }
 
-        .status-active {
-            background-color: #c8e6c9;
+        .info-value {
+            flex: 1;
+            color: #424242;
+        }
+
+        .verification-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            gap: 5px;
+        }
+
+        .status-verified {
+            background-color: #e8f5e9;
             color: #2e7d32;
         }
 
-        .status-inactive {
-            background-color: #ffcdd2;
-            color: #c62828;
-        }
-
-        .submit-button {
-            background-color: #2e7d32;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .submit-button:hover {
-            background-color: #1b5e20;
+        .status-unverified {
+            background-color: #ffebee;
+            color: #d32f2f;
         }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <ul>
-            <li><a href="/payments">Платежи</a></li>
-            <li><a href="/history">История</a></li>
-            <li><a href="/favorites">Избранное</a></li>
-            <li><a href="/settings">Настройки</a></li>
-        </ul>
-        
-        <div style="margin-top: auto;">
-            <form action="/logout" method="post">
-                <input type="hidden" name="_csrf" value="${_csrf.token}">
-                <input type="submit" value="Выйти" class="submit-button">
-            </form>
-        </div>
-    </div>
-
-    <div class="profile-container">
-        <div class="profile-header">
-            <div class="profile-avatar">
-                <#if user.name??>
-                    ${user.name?substring(0,1)}
-                </#if>
+    <#include "common/navigation.ftlh">
+    
+    <div class="content">
+        <div class="dashboard">
+            <div class="profile-header">
+                <div class="profile-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2>Профиль пользователя</h2>
             </div>
-            <div>
-                <h2>${user.name!''}</h2>
-                <p>ID: ${user.id!''}</p>
-                <span class="account-status ${user.active?string('status-active', 'status-inactive')}">
-                    ${user.active?string('Активный аккаунт', 'Неактивный аккаунт')}
+
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">${user.email!''}</span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Статус верификации:</span>
+                <span class="verification-status ${user.verified?then('status-verified','status-unverified')}">
+                    <i class="fas ${user.verified?then('fa-check-circle','fa-times-circle')}"></i>
+                    ${user.verified?then('Верифицирован','Не верифицирован')}
                 </span>
             </div>
-        </div>
 
-        <div class="profile-info">
-            <div class="info-card">
-                <h3>Основная информация</h3>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span class="info-value">${user.email!''}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Телефон:</span>
-                    <span class="info-value">${user.phoneNumber!''}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Специальность:</span>
-                    <span class="info-value">${user.speciality!''}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Опыт:</span>
-                    <span class="info-value">${user.expirience!''}</span>
-                </div>
-                <a href="/profile/edit">
-                    <button class="edit-button">Редактировать</button>
-                </a>
+            <div class="info-row">
+                <span class="info-label">Тип пользователя:</span>
+                <span class="info-value">
+                    <#list user.roles as role>
+                        <#if role == "ROLE_USER">Физическое лицо
+                        <#elseif role == "ROLE_URFACE">Юридическое лицо
+                        <#elseif role == "ROLE_ADMIN">Администратор
+                        </#if><#sep>, 
+                    </#list>
+                </span>
             </div>
 
-            <div class="info-card">
-                <h3>Роли и права доступа</h3>
-                <div class="info-row">
-                    <span class="info-label">Роли:</span>
-                    <span class="info-value">
-                        <#list user.roles as role>
-                            ${role}<#sep>, 
-                        </#list>
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Дата регистрации:</span>
-                    <span class="info-value">${user.dateOfCreated!''}</span>
-                </div>
+            <div class="info-row">
+                <span class="info-label">Дата регистрации:</span>
+                <span class="info-value">
+                    <#if user.dateOfCreated??>
+                        ${user.dateOfCreated}
+                    <#else>
+                        Не указана
+                    </#if>
+                </span>
             </div>
+
+            <div class="info-row">
+                <span class="info-label">Количество счетов:</span>
+                <span class="info-value">${userInvoices?size}</span>
+            </div>
+
+            <#if mainInvoice??>
+            <div class="info-row">
+                <span class="info-label">Основной счёт:</span>
+                <span class="info-value">${mainInvoice.invoiceId}</span>
+            </div>
+            </#if>
+
+            <#if contract??>
+            <div class="info-row">
+                <span class="info-label">Номер договора:</span>
+                <span class="info-value">${contract.contractNumber}</span>
+            </div>
+            </#if>
         </div>
     </div>
 </body>

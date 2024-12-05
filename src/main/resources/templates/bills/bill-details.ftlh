@@ -235,14 +235,15 @@
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
                 <div class="form-group">
                     <label for="targetInvoiceId">Счет получателя</label>
-                    <select name="targetInvoiceId" id="targetInvoiceId" class="form-control" required>
-                        <option value="">Выберите счет</option>
-                        <#list userInvoices as targetBill>
-                            <#if targetBill.invoiceId != bill.invoiceId>
-                                <option value="${targetBill.invoiceId}">#${targetBill.invoiceId}</option>
-                            </#if>
-                        </#list>
-                    </select>
+                     <select name="targetInvoiceId" id="targetInvoiceId" class="form-control" required>
+    <option value="">Выберите счет</option>
+    <#list userInvoices as targetBill>
+        <#if targetBill.invoiceId != bill.invoiceId && targetBill.nationalCurrency == bill.nationalCurrency>
+            <option value="${targetBill.invoiceId}">#${targetBill.invoiceId} (${targetBill.nationalCurrency?string('BYN', 'USD')})</option>
+        </#if>
+    </#list>
+</select>
+
                 </div>
                 <div class="form-group">
                     <label for="amount">Сумма перевода</label>

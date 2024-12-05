@@ -204,7 +204,7 @@ public String setMainAccount(@PathVariable Long id, Principal principal) {
 }
 
 @PostMapping("/{id}/transfer")
-@PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_URFACE')") 
+@PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_URFACE')")
 public String transferMoney(
         @PathVariable Long id,
         @RequestParam Long targetInvoiceId,
@@ -216,28 +216,19 @@ public String transferMoney(
         Invoice sourceInvoice = invoiceService.getInvoiceById(id);
         Invoice targetInvoice = invoiceService.getInvoiceById(targetInvoiceId);
 
-        System.out.println("Счет #" + sourceInvoice.getInvoiceId() + ":");
-        System.out.println("  - Баланс: " + sourceInvoice.getAmount() + " BYN");
-        System.out.println("  - Основной счет: " + sourceInvoice.isMainAccount());
-        System.out.println("  - Дата создания: " + sourceInvoice.getCreatedDate());
-        System.out.println("  - Статус: " + sourceInvoice.getStatus());
-        
-        System.out.println("Счет #" + targetInvoice.getInvoiceId() + ":");
-        System.out.println("  - Баланс: " + targetInvoice.getAmount() + " BYN");
-        System.out.println("  - Основной счет: " + targetInvoice.isMainAccount());
-        System.out.println("  - Дата создания: " + targetInvoice.getCreatedDate());
-        System.out.println("  - Статус: " + targetInvoice.getStatus());
-        
-       
-
-        // Проверяем права доступа к исходному счету
+        // Проверяем принадлежность исходного счета
         if (!sourceInvoice.getContract().getUser().equals(user)) {
             throw new AccessDeniedException("У вас нет прав на управление этим счетом");
         }
 
-        // Проверяем, что целевой счет принадлежит тому же пользователю
+        // Проверяем принадлежность целевого счета
         if (!targetInvoice.getContract().getUser().equals(user)) {
             throw new AccessDeniedException("Целевой счет вам не принадлежит");
+        }
+
+        // Проверяем валюту счетов
+        if (sourceInvoice.isNationalCurrency() != targetInvoice.isNationalCurrency()) {
+            throw new RuntimeException("Перевод возможен только между счетами одной валюты");
         }
 
         // Проверяем статусы счетов
@@ -250,7 +241,8 @@ public String transferMoney(
         operationService.transferMoney(sourceInvoice, targetInvoice, amount);
         
         redirectAttributes.addFlashAttribute("success", 
-            String.format("Успешно переведено %.2f BYN на счет #%d", amount, targetInvoiceId));
+            String.format("Успешно переведено %.2f %s на счет #%d", 
+                amount, sourceInvoice.isNationalCurrency(), targetInvoiceId));
         
         return "redirect:/bills/" + id + "/details";
         

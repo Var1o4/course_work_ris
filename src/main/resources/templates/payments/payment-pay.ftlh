@@ -35,15 +35,22 @@
                         </select>
                     </div>
 
-                    <#if payment?? && !payment.fixedPrice>
-                        <div class="form-group mb-3">
+                    <div class="form-group mb-3">
+                        <#if payment.fixedPrice && !payment.recipient??>
+                            <input type="hidden" name="amount" value="${payment.amount}">
+                            <p class="form-control-static">Сумма к оплате: ${payment.amount} BYN</p>
+                        <#else>
                             <label for="amount">Сумма платежа:</label>
-                            <input type="number" class="form-control" id="amount" name="amount" 
-                                   step="0.01" min="0.01" required>
-                        </div>
-                    <#else>
-                        <input type="hidden" name="amount" value="${(payment.amount)!'0.00'}">
-                    </#if>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="amount" 
+                                   name="amount" 
+                                   step="0.01" 
+                                   min="0.01" 
+                                   value="${(payment.amount)!''}"
+                                   required>
+                        </#if>
+                    </div>
 
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="/payments/my" class="btn btn-secondary">

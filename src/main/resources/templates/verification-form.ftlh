@@ -1,88 +1,159 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Верификация аккаунта</title>
+    <meta charset="UTF-8">
+    <title>ЕРИП 2.0 | Верификация аккаунта</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         .verification-form {
-            max-width: 600px;
-            margin: 30px auto;
-            padding: 20px;
             background: white;
+            padding: 40px;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            margin: 20px;
         }
-        
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
-        
-        .form-label {
+
+        label {
             display: block;
-            margin-bottom: 5px;
-            color: #333;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
         }
-        
-        .form-control {
+
+        input[type="text"],
+        input[type="file"],
+        select {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 5px;
+            font-size: 14px;
         }
-        
-        .photo-upload {
-            border: 2px dashed #ddd;
-            padding: 20px;
+
+        select {
+            background-color: white;
+        }
+
+        .btn-submit {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .btn-submit:hover {
+            background: #1b5e20;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            display: block;
             text-align: center;
-            margin-bottom: 20px;
+            color: #555;
         }
     </style>
 </head>
 <body>
     <div class="verification-form">
-        <h2>Верификация аккаунта</h2>
+        <h1>Верификация аккаунта</h1>
         <form action="/verify" method="post" enctype="multipart/form-data">
             <input type="hidden" name="_csrf" value="${_csrf.token}">
             
             <div class="form-group">
-                <label class="form-label">Адрес проживания</label>
-                <input type="text" name="address" class="form-control" required>
+                <label for="address">Адрес</label>
+                <input type="text" id="address" name="address" required>
             </div>
-            
+
             <div class="form-group">
-                <label class="form-label">Номер паспорта</label>
-                <input type="text" name="passportNumber" class="form-control" required>
+                <label for="passportNumber">Номер паспорта</label>
+                <input type="text" id="passportNumber" name="passportNumber" required>
             </div>
-            
-            <div class="photo-upload">
-                <label class="form-label">Ваше фото</label>
-                <input type="file" name="personalPhoto" accept="image/*" required>
-            </div>
-            
-            <div class="photo-upload">
-                <label class="form-label">Фото паспорта</label>
-                <input type="file" name="passportPhoto" accept="image/*" required>
-            </div>
-            
+
             <div class="form-group">
-                <label class="form-label">Тип пользователя</label>
-                <select name="userType" class="form-control" required>
+                <label for="userType">Тип пользователя</label>
+                <select id="userType" name="userType" required>
                     <option value="ROLE_USER">Физическое лицо</option>
                     <option value="ROLE_URFACE">Юридическое лицо</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
-                <label class="form-label">Срок договора (лет)</label>
-                <select name="contractDuration" class="form-control" required>
-                    <option value="1">1 год</option>
-                    <option value="2">2 года</option>
-                    <option value="3">3 года</option>
-                    <option value="4">4 года</option>
-                    <option value="5">5 лет</option>
+                <label for="contractDuration">Срок действия договора (месяцев)</label>
+                <select id="contractDuration" name="contractDuration" required>
+                    <option value="12">12 месяцев</option>
+                    <option value="24">24 месяца</option>
+                    <option value="36">36 месяцев</option>
                 </select>
             </div>
-            
-            <button type="submit" class="btn btn-primary">Отправить на проверку</button>
+
+            <div class="form-group">
+                <label>Фото паспорта</label>
+                <div class="file-input-wrapper">
+                    <div class="file-input-button">
+                        <i class="fas fa-upload"></i> Выберите файл
+                    </div>
+                    <input type="file" name="passportPhoto" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Личное фото</label>
+                <div class="file-input-wrapper">
+                    <div class="file-input-button">
+                        <i class="fas fa-upload"></i> Выберите файл
+                    </div>
+                    <input type="file" name="personalPhoto" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">Отправить на проверку</button>
         </form>
     </div>
 </body>

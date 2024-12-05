@@ -108,19 +108,17 @@
         <a href="/bills" class="menu-item">Счета</a>
         <a href="/history" class="menu-item">История</a>
         <a href="/debts" class="menu-item">Задолженности</a>
+          <a href="/profile" class="menu-item">
+            Профиль
+        </a>
 
         <#if user?? && user.hasRole('ROLE_ADMIN')>
             <div class="menu-item has-submenu">
                 Админ панель
                 <div class="submenu">
                     <a href="/admin/users">Управление пользователями</a>
-                    <a href="/admin/roles">Управление ролями</a>
-                    <a href="/admin/services">Управление услугами</a>
-                    <a href="/admin/categories">Управление категориями</a>
-                    <a href="/admin/payments">Управление платежами</a>
-                    <a href="/admin/statistics">Статистика системы</a>
-                    <a href="/admin/logs">Системные логи</a>
-                    <a href="/admin/settings">Настройки системы</a>
+                    <a href="/admin/verifications">Одобрение верификаций</a>
+                    <a href="/admin/suspicious-users">Подозрительные пользователи</a>
                 </div>
             </div>
         </#if>

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.nio.file.AccessDeniedException;
@@ -34,6 +35,8 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
 
 @Controller
 @RequestMapping("/payments")
@@ -188,64 +191,94 @@ public class PaymentController {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_USER' , 'ROLE_URFACE')")
     public String processPayment(@PathVariable Long id,
                                @ModelAttribute("paymentForm") PaymentProcessDTO dto,
-                               Principal principal,
-                               HttpServletRequest request) {
-        User user = paymentService.getUserByPrincipal(principal);
-        Payment payment = paymentService.getPaymentById(id);
-        Invoice sourceInvoice = invoiceService.getInvoiceById(dto.getInvoiceId());
-        
-        // Проверяем, что счет принадлежит пользователю
-        if (!sourceInvoice.getContract().getUser().equals(user)) {
-            throw new org.springframework.security.access.AccessDeniedException("У вас нет прав на использование этого счета");
-        }
-        
-        // Проверяем сумму для платежа с фиксированной ценой
-        if (payment.isFixedPrice()) {
-            BigDecimal paymentAmount = new BigDecimal(payment.getAmount().toString());
-            BigDecimal dtoAmount = new BigDecimal(dto.getAmount().toString());
-            
-            if (paymentAmount.compareTo(dtoAmount) != 0) {
-                throw new RuntimeException("Сумма платежа должна быть равна " + paymentAmount);
-            }
-        }
-        
+                               Principal principal, 
+                               HttpServletRequest request,
+                               RedirectAttributes redirectAttributes) {
+        log.info("Processing payment request for payment ID: {}, invoice ID: {}, amount: {}", 
+                 id, dto.getInvoiceId(), dto.getAmount());
         try {
-            paymentService.processPayment(id, dto.getInvoiceId(), dto.getAmount(), request);
-            return "redirect:/payments/my?success=true";
+            User user = paymentService.getUserByPrincipal(principal);
+            Payment payment = paymentService.getPaymentById(id);
+            Invoice sourceInvoice = invoiceService.getInvoiceById(dto.getInvoiceId());
+            
+            // Проверяем, что счет принадлежит пользователю
+            if (!sourceInvoice.getContract().getUser().equals(user)) {
+                throw new AccessDeniedException("У вас нет прав на использование этого счета");
+            }
+            
+            // Проверяем валюту счета
+            if (!sourceInvoice.isNationalCurrency()) {
+                throw new RuntimeException("Оплата возможна только со счетов в белорусских рублях");
+            }
+            
+            BigDecimal paymentAmount;
+        // Для фиксированных платежей берем сумму из платежа
+        if (payment.isFixedPrice() && payment.getRecipient() == null) {
+            paymentAmount = BigDecimal.valueOf(payment.getAmount());
+        } else {
+            paymentAmount = dto.getAmount();
+        }
+            
+            // Проверяем достаточность средств
+            if (sourceInvoice.getAmount().compareTo(paymentAmount) < 0) {
+                throw new RuntimeException("Недостаточно средств на счете");
+            }
+            
+            paymentService.processPayment(id, sourceInvoice.getInvoiceId(), paymentAmount, request);
+            redirectAttributes.addFlashAttribute("success", "Платеж успеш��о выполнен");
+            
+            return payment.getRecipient() != null ? "redirect:/payments/my" : "redirect:/payments/groups";
+            
         } catch (Exception e) {
-            return "redirect:/payments/" + id + "/pay?error=" + 
-                   URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+            log.error("Error processing payment: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/payments/" + id + "/pay";
         }
     }
 
     @PostMapping("/upload")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_URFACE')")
     public String uploadPayments(@RequestParam("xmlFile") MultipartFile file,
-                           Principal principal,
-                           HttpServletRequest request,
-                           HttpServletResponse response) {
-        response.setCharacterEncoding("UTF-8");
-        log.info("Starting file upload process");
+                       Principal principal,
+                       HttpServletRequest request) {
         try {
-            if (file.isEmpty()) {
-                return "redirect:/payments/my?error=" + URLEncoder.encode("Файл пуст", StandardCharsets.UTF_8);
-            }
+            // Логируем исходную кодировку файла
+            log.info("Original file name: {}", file.getOriginalFilename());
+            log.info("Content type: {}", file.getContentType());
             
-            byte[] bytes = file.getBytes();
-            String content = new String(bytes, "windows-1251");
+            // Читаем содержимое файла в разных кодировках для диагностики
+            String contentUtf8 = new String(file.getBytes(), StandardCharsets.UTF_8);
+            String contentWindows = new String(file.getBytes(), Charset.forName("windows-1251"));
             
-            // Преобразуем в UTF-8 для дальнейшей обработки
-            content = new String(content.getBytes("windows-1251"), StandardCharsets.UTF_8);
+            log.info("Content in UTF-8: {}", contentUtf8);
+            log.info("Content in Windows-1251: {}", contentWindows);
             
             JAXBContext context = JAXBContext.newInstance(PaymentXmlDTO.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
             
-            PaymentXmlDTO paymentData = (PaymentXmlDTO) unmarshaller.unmarshal(new StringReader(content));
+            // Пробуем разные варианты чтения XML
+            PaymentXmlDTO paymentData;
+            try {
+                // Сначала пробуем UTF-8
+                paymentData = (PaymentXmlDTO) unmarshaller.unmarshal(
+                    new ByteArrayInputStream(file.getBytes())
+                );
+                log.info("Successfully unmarshalled with default encoding");
+            } catch (Exception e) {
+                log.error("Failed to unmarshal with default encoding, trying Windows-1251");
+                // Если не получилось, пробуем windows-1251
+                String content = new String(file.getBytes(), Charset.forName("windows-1251"));
+                paymentData = (PaymentXmlDTO) unmarshaller.unmarshal(new StringReader(content));
+            }
+            
+            // Логируем результат unmarshalling
+            log.info("Unmarshalled payment name: {}", paymentData.getPayments().get(0).getName());
+            log.info("Unmarshalled payment description: {}", paymentData.getPayments().get(0).getDescription());
             
             paymentService.processXmlPayments(paymentData, principal, request);
             return "redirect:/payments/my?success=true";
         } catch (Exception e) {
-            log.error("Error processing XML file", e);
+            log.error("Error processing XML file: ", e);
             return "redirect:/payments/my?error=" + 
                    URLEncoder.encode("Ошибка обработки файла: " + e.getMessage(), StandardCharsets.UTF_8);
         }

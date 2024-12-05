@@ -42,6 +42,9 @@ public class UserService {
     private final OperationService operationService;
 
 
+
+   
+
     public User getUserByPrincipal(Principal principal) {
         if(principal == null) return new User();
         return userRepository.findByEmail(principal.getName());
@@ -240,9 +243,32 @@ private String generateContractNumber() {
     }
     
     public List<User> getPendingVerifications() {
-        return userRepository.findByVerificationSubmittedTrueAndVerifiedFalse();
-    }
-
+      log.info("Getting pending verifications");
+      
+      // Получаем всех пользователей для проверки
+      List<User> allUsers = userRepository.findAll();
+      log.info("Total users in system: {}", allUsers.size());
+      
+      // Логируем состояние всех пользователей
+      allUsers.forEach(user -> {
+          log.info("User {}: verificationSubmitted={}, verified={}", 
+                  user.getEmail(),
+                  user.isVerificationSubmitted(),
+                  user.isVerified());
+      });
+      
+      List<User> pendingUsers = userRepository.findByVerificationSubmittedTrueAndVerifiedFalse();
+      log.info("Found {} users pending verification", pendingUsers.size());
+      
+      pendingUsers.forEach(user -> {
+          log.info("Pending user: email={}, verificationSubmitted={}, verified={}", 
+                  user.getEmail(), 
+                  user.isVerificationSubmitted(), 
+                  user.isVerified());
+      });
+      
+      return pendingUsers;
+  }
     public User findAdminUser() {
       return userRepository.findByEmail("1111@mail.com");
     }

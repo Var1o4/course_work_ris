@@ -51,13 +51,22 @@ public class VerificationCheckFilter extends OncePerRequestFilter {
                     return;
                 }
                 
-                if (!user.isVerified()) {
-                    if (path.equals("/verify") || path.equals("/verification-pending") || 
-                        path.equals("/submit-verification")) {
+                   // Если пользователь не верифицирован
+                   if (!user.isVerified()) {
+                    // Если форма верификации не заполнена, отправляем на форму
+                    if (!user.isVerificationSubmitted()) {
+                        if (path.equals("/verify")) {
+                            filterChain.doFilter(request, response);
+                            return;
+                        }
+                        response.sendRedirect("/verify");
+                        return;
+                    }
+                    // Если форма заполнена, но верификация не пройдена
+                    if (path.equals("/verification-pending")) {
                         filterChain.doFilter(request, response);
                         return;
                     }
-                    
                     response.sendRedirect("/verification-pending");
                     return;
                 }
